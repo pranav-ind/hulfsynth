@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import trange
+from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
+
 
 
 class DoubleConv3D(nn.Module):
@@ -67,35 +70,50 @@ class UNet3D(nn.Module):
 
         return self.final_conv(x)
 
+class CustomDataset(Dataset):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        
 
-# Example usage
-if __name__ == "__main__":
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem__(self, idx):
+        sample_x = self.x[idx]
+        sample_y = self.x[idx]
+
+        return sample_x, sample_y
+
+
+
+
+if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Device: ", device)
     # Example input: batch of 1, 1 channel, 64x64x64 volume
     x = torch.randn((10, 1, 224, 224, 160)).to(device)
     y = torch.randn((10, 1, 224, 224, 160)).to(device)  # high-quality target
 
+    dataset = CustomDataset(x,y)
+    # del x, y
+    dataloader = DataLoader(dataset, batch_size=4, shuffle=True, num_workers=4)
+
     model = UNet3D().to(device)
-    output = model(x)
-
-    print("Input shape:", x.shape)
-    print("Output shape:", output.shape)
-
-    # Loss function
+    model.train()
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    num_epochs = 5
     loss_fn = nn.MSELoss()
-    loss = loss_fn(output, y)
+    model = UNet3D().to(device)
 
-    print("Loss:", loss.item())
-
-    
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-model.train()
-
-for epoch in trange(250):  # replace with dataloader for real training
-    optimizer.zero_grad()
-    output = model(x)
-    loss = loss_fn(output, y)
-    loss.backward()
-    optimizer.step()
-    print(f"Epoch {epoch}, Loss: {loss.item():.4f}")
+    for epoch in trange(num_epochs):  # replace with dataloader for real training
+        running_loss = 0.0
+        for batch_idx, (batch_x, batch_y) in enumerate(dataloader):
+            optimizer.zero_grad()
+            output = model(batch_x)
+            loss = loss_fn(output, batch_y)
+            print(f"Epoch {epoch}, Loss: {loss.item():.4f}")
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+        
