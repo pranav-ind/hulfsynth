@@ -81,7 +81,7 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, idx):
         sample_x = self.x[idx]
-        sample_y = self.x[idx]
+        sample_y = self.y[idx]
 
         return sample_x, sample_y
 
@@ -97,7 +97,7 @@ if __name__ == '__main__':
 
     dataset = CustomDataset(x,y)
     # del x, y
-    dataloader = DataLoader(dataset, batch_size=4, shuffle=True, num_workers=4)
+    dataloader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=4)
 
     model = UNet3D().to(device)
     model.train()
@@ -109,6 +109,7 @@ if __name__ == '__main__':
     for epoch in trange(num_epochs):  # replace with dataloader for real training
         running_loss = 0.0
         for batch_idx, (batch_x, batch_y) in enumerate(dataloader):
+            print("batch_x_y shape: ", batch_x.shape, batch_y.shape)
             optimizer.zero_grad()
             output = model(batch_x)
             loss = loss_fn(output, batch_y)
@@ -116,4 +117,8 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
+
+
+
+
         
