@@ -23,10 +23,11 @@ def get_dataset():
         ulf_loc = idx + "/64mT/" + idx[-9:] + "_T1.nii.gz"
         hf = nib.load(hf_loc).get_fdata()
         ulf = nib.load(ulf_loc).get_fdata()
-        x.append(hf)
-        y.append(ulf)
-    x = torch.Tensor(x)
-    y = torch.Tensor(y)
+        x.append(np.expand_dims(hf, axis=0)) #adding channel dim
+        y.append(np.expand_dims(ulf, axis=0)) #adding channel dim
+    x = torch.Tensor(np.array(x))
+    y = torch.Tensor(np.array(y))
+    print('xshape: ', x.shape, 'yshape: ', y.shape)
     dataset = TensorDataset(x,y)
 
     return dataset

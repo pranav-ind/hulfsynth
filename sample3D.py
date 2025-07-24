@@ -102,11 +102,13 @@ if __name__ == '__main__':
     loss_fn = nn.MSELoss()
     model = UNet3D().to(device)
 
+    # print(next(iter(dataloader))[0].shape)
+
     for epoch in trange(num_epochs):  # replace with dataloader for real training
         running_loss = 0.0
         for batch_idx, (batch_x, batch_y) in enumerate(dataloader):
             batch_x, batch_y = batch_x.to(device), batch_y.to(device)
-            # print("batch_x_y shape: ", batch_x.shape, batch_y.shape)
+            print("batch_x_y shape: ", batch_x.shape, batch_y.shape)
             optimizer.zero_grad()
             output = model(batch_x)
             loss = loss_fn(output, batch_y)
