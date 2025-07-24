@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from tqdm import tqdm
 
 
 class DoubleConv3D(nn.Module):
@@ -70,7 +71,7 @@ class UNet3D(nn.Module):
 # Example usage
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
+    print("Device: ", device)
     # Example input: batch of 1, 1 channel, 64x64x64 volume
     x = torch.randn((1, 1, 224, 224, 160)).to(device)
     y = torch.randn((1, 1, 224, 224, 160)).to(device)  # high-quality target
@@ -91,7 +92,7 @@ if __name__ == "__main__":
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 model.train()
 
-for epoch in range(10):  # replace with dataloader for real training
+for epoch in range(tqdm((100))):  # replace with dataloader for real training
     optimizer.zero_grad()
     output = model(x)
     loss = loss_fn(output, y)
