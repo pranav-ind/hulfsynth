@@ -15,7 +15,7 @@ def sub_dirs(dirname):
 
 def get_dataset():
     #reads ULF-Enc folder and returns it's train dataset
-    train_data_loc = "/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Data/ULF_EnC/Training_data/"
+    train_data_loc = "./Data/ULF_EnC/Training_data/"
     first_level = sub_dirs(train_data_loc)
     x, y = [], []
     for idx in first_level:
