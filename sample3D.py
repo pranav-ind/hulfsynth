@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from tqdm import tqdm
+from tqdm import trange
 
 
 class DoubleConv3D(nn.Module):
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 model.train()
 
-for epoch in range(tqdm((100))):  # replace with dataloader for real training
+for epoch in trange(100):  # replace with dataloader for real training
     optimizer.zero_grad()
     output = model(x)
     loss = loss_fn(output, y)
