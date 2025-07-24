@@ -72,8 +72,8 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Example input: batch of 1, 1 channel, 64x64x64 volume
-    x = torch.randn((1, 1, 64, 64, 64)).to(device)
-    y = torch.randn((1, 1, 64, 64, 64)).to(device)  # high-quality target
+    x = torch.randn((1, 1, 224, 224, 160)).to(device)
+    y = torch.randn((1, 1, 224, 224, 160)).to(device)  # high-quality target
 
     model = UNet3D().to(device)
     output = model(x)
