@@ -4,6 +4,8 @@ import torch.nn.functional as F
 from tqdm import trange
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
+from load_data3D import get_dataset
+
 
 
 
@@ -87,16 +89,10 @@ class CustomDataset(Dataset):
 
 
 
-
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Device: ", device)
-    # Example input: batch of 1, 1 channel, 64x64x64 volume
-    x = torch.randn((10, 1, 224, 224, 160)).to(device)
-    y = torch.randn((10, 1, 224, 224, 160)).to(device)  # high-quality target
-
-    dataset = CustomDataset(x,y)
-    # del x, y
+    dataset = get_dataset()
     dataloader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=4)
 
     model = UNet3D().to(device)
@@ -109,7 +105,8 @@ if __name__ == '__main__':
     for epoch in trange(num_epochs):  # replace with dataloader for real training
         running_loss = 0.0
         for batch_idx, (batch_x, batch_y) in enumerate(dataloader):
-            print("batch_x_y shape: ", batch_x.shape, batch_y.shape)
+            batch_x, batch_y = batch_x.to(device), batch_y.to(device)
+            # print("batch_x_y shape: ", batch_x.shape, batch_y.shape)
             optimizer.zero_grad()
             output = model(batch_x)
             loss = loss_fn(output, batch_y)
