@@ -73,8 +73,8 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Device: ", device)
     # Example input: batch of 1, 1 channel, 64x64x64 volume
-    x = torch.randn((1, 1, 224, 224, 160)).to(device)
-    y = torch.randn((1, 1, 224, 224, 160)).to(device)  # high-quality target
+    x = torch.randn((10, 1, 224, 224, 160)).to(device)
+    y = torch.randn((10, 1, 224, 224, 160)).to(device)  # high-quality target
 
     model = UNet3D().to(device)
     output = model(x)
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 model.train()
 
-for epoch in trange(100):  # replace with dataloader for real training
+for epoch in trange(250):  # replace with dataloader for real training
     optimizer.zero_grad()
     output = model(x)
     loss = loss_fn(output, y)
