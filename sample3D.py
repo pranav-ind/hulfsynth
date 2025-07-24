@@ -5,10 +5,10 @@ from tqdm import trange
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from load_data3D import get_dataset
+import wandb
 
 
-
-
+wandb.login()
 class DoubleConv3D(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(DoubleConv3D, self).__init__()
@@ -116,7 +116,7 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
-
+        wandb.log({"total_loss": running_loss}, mode='L') 
 
 
 
