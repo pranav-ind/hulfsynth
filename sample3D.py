@@ -105,8 +105,8 @@ if __name__ == '__main__':
 
     project_ = "hulfsynth_ulfenc"
     # run_name = "run_" + str(run_id)
-    run = wandb.init(entity=project_, project=project_)
-
+    run = wandb.init(project=project_)
+    # print("wandb init")
     # print(next(iter(dataloader))[0].shape)
 
     for epoch in trange(num_epochs):  # replace with dataloader for real training
@@ -121,7 +121,7 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
-        wandb.log({"total_loss": running_loss}, mode='L') 
+        wandb.log({"total_loss": running_loss})
 
 
 
