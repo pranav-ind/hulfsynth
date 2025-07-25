@@ -102,6 +102,11 @@ if __name__ == '__main__':
     loss_fn = nn.MSELoss()
     model = UNet3D().to(device)
 
+
+    project_ = "hulfsynth_ulfenc"
+    # run_name = "run_" + str(run_id)
+    run = wandb.init(entity=project_, project=project_)
+
     # print(next(iter(dataloader))[0].shape)
 
     for epoch in trange(num_epochs):  # replace with dataloader for real training
