@@ -92,7 +92,11 @@ class CustomDataset(Dataset):
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Device: ", device)
-    dataset = get_dataset()
+    # dataset = get_dataset()
+    x = torch.randn(50,1,64,64,64)
+    y = torch.randn(50,1,64,64,64)
+    dataset = TensorDataset(x,y)
+    
     dataloader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=4)
 
     model = UNet3D().to(device)
