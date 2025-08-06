@@ -239,8 +239,8 @@ class ModelTrainer(nn.Module):
             
             #visualize observed patches 
             wandb.log({
-            "seg_patch": wandb.Image((targ_seg_chunk[:,2].view(chunk_size_lf[0], chunk_size_lf[1], chunk_size_lf[2]))[5].detach().cpu().numpy(), model='L'), #random slice=5
-            "seg_pred_patch": wandb.Image((model_output_seg[:,2].view(chunk_size_lf[0], chunk_size_lf[1], chunk_size_lf[2]))[5].detach().cpu().numpy(), model='L') #random slice=5,
+            "seg_patch": wandb.Image((targ_seg_chunk[:,2].view(chunk_size_lf[0], chunk_size_lf[1], chunk_size_lf[2]))[5].detach().cpu().numpy(), mode='L'), #random slice=5
+            "seg_pred_patch": wandb.Image((model_output_seg[:,2].view(chunk_size_lf[0], chunk_size_lf[1], chunk_size_lf[2]))[5].detach().cpu().numpy(), mode='L') #random slice=5,
             
             # "hf_int": wandb.Image(hf_int_res_normalized.squeeze(0).squeeze(0).detach().cpu().numpy(), mode='L'), 
             # "lf_op": wandb.Image(lf_output.view(size_lf).detach().cpu().numpy(), mode='L') 
