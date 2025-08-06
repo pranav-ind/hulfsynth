@@ -229,7 +229,7 @@ class ModelTrainer(nn.Module):
             targ_chunk = target_patch.reshape(-1, 1).unsqueeze(0)
             targ_seg_chunk = target_seg_patch.reshape(1, 4, chunk_size_lf[0]*chunk_size_lf[1]*chunk_size_lf[2]).unsqueeze(-1) #output : (1,4, *chunk_lf, 1)
 
-            model_output_seg_pre, model_output_seg, model_output_img, coords = model(coord_chunk)
+            model_output_seg_pre, model_output_seg, model_output_img_pre , model_output_img, coords = model(coord_chunk)
             print('model_output_img = ', model_output_img.shape, model_output_seg.shape)
             pred_lf_chunk = self.phi.forward(chunk_size, model_output_seg, model_output_img, self.M) #shape (1,1,*chunk_lf)
             # print('pred_lf_chunk', pred_lf_chunk.shape, targ_chunk.shape)
