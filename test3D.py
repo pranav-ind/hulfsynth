@@ -18,7 +18,7 @@ import copy
 import warnings
 warnings.filterwarnings("ignore")
 from tqdm import tqdm, tqdm_notebook
-
+import wandb
 
 
 
@@ -230,7 +230,7 @@ class ModelTrainer(nn.Module):
             targ_seg_chunk = target_seg_patch.reshape(1, 4, chunk_size_lf[0]*chunk_size_lf[1]*chunk_size_lf[2]).unsqueeze(-1) #output : (1,4, *chunk_lf, 1)
 
             model_output_seg_pre, model_output_seg, model_output_img_pre , model_output_img, coords = model(coord_chunk)
-            print('model_output_img = ', model_output_img.shape, model_output_seg.shape)
+            # print('model_output_img = ', model_output_img.shape, model_output_seg.shape)
             pred_lf_chunk = self.phi.forward(chunk_size, model_output_seg, model_output_img, self.M) #shape (1,1,*chunk_lf)
             # print('pred_lf_chunk', pred_lf_chunk.shape, targ_chunk.shape)
             # print('model_output_seg', model_output_seg.shape)
@@ -302,6 +302,16 @@ class ModelTrainer(nn.Module):
             torch.cuda.synchronize()
             optimizer.step()
             # self.scheduler.step()
+            
+            wandb.log({"total_loss": losses["Total_Loss"][-1],
+            "mse": losses["mse"][-1], 
+            "prior": losses["prior"][-1], 
+            "seg": losses["seg"][-1], 
+            "tv_seg": losses["TV_seg"][-1], 
+            "tv_img": losses["TV_img"][-1], 
+            # "hf_int": wandb.Image(hf_int_res_normalized.squeeze(0).squeeze(0).detach().cpu().numpy(), mode='L'), 
+            # "lf_op": wandb.Image(lf_output.view(size_lf).detach().cpu().numpy(), mode='L') 
+            })
         
         return model, losses
     def inference(self, model):
@@ -388,6 +398,7 @@ def visualize_volume_slices(volume1, volume2, axis=0, num_slices=16, title1='Vol
 
 
 if __name__ == '__main__':
+    wandb.login()
     config = copy.deepcopy(default_config)
     config["ffe"] = False
     config["in_features"] = 3 #3D input
@@ -399,13 +410,16 @@ if __name__ == '__main__':
     config["l5"] = [5e-2, 5e-2, 5e-3, 9e-2]
     config["w0"] = 30
 
-    config["total_steps"] = 1
+    config["total_steps"] = 2
 
     # model = get_model(config).to(get_device())
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
-    print(hf_ground_truth.shape, lf_gt.shape, prior_seg_dice.shape, lf_gt_seg_dice.shape )
+    # print(hf_ground_truth.shape, lf_gt.shape, prior_seg_dice.shape, lf_gt_seg_dice.shape )
 
 
+    project_ = "hulfsynth_ulfenc"
+    # run_name = "run_" + str(run_id)
+    run = wandb.init(project=project_)
 
 
     trainer = ModelTrainer(config, lf_gt, prior_seg_dice, lf_gt_seg_dice, M) #init
