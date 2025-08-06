@@ -237,6 +237,14 @@ class ModelTrainer(nn.Module):
             loss, L_mse, L_prior, L_seg, TV_seg, TV_img = self.compute_loss(pred_lf_chunk, targ_chunk, model_output_seg, targ_seg_chunk, targ_prior_chunk, model_output_seg_pre, model_output_img) #total_loss per chunk
             loss.backward() 
             
+            #visualize observed patches 
+            wandb.log({
+            "seg_patch": wandb.Image((targ_seg_chunk[2].view(chunk_size[0], chunk_size[1], chunk_size[2]))[5].detach().cpu().numpy(), model='L'), #random slice=5
+            "seg_pred_patch": wandb.Image((model_output_seg[2].view(chunk_size[0], chunk_size[1], chunk_size[2]))[5].detach().cpu().numpy(), model='L') #random slice=5,
+            
+            # "hf_int": wandb.Image(hf_int_res_normalized.squeeze(0).squeeze(0).detach().cpu().numpy(), mode='L'), 
+            # "lf_op": wandb.Image(lf_output.view(size_lf).detach().cpu().numpy(), mode='L') 
+            })
             
             loss_per_epoch += loss #loss per epoch
             mse_per_epoch += L_mse 
@@ -302,16 +310,16 @@ class ModelTrainer(nn.Module):
             torch.cuda.synchronize()
             optimizer.step()
             # self.scheduler.step()
-            
+            '''
+            # uncomment to log losses in wandb
             wandb.log({"total_loss": losses["Total_Loss"][-1],
             "mse": losses["mse"][-1], 
             "prior": losses["prior"][-1], 
             "seg": losses["seg"][-1], 
             "tv_seg": losses["TV_seg"][-1], 
             "tv_img": losses["TV_img"][-1], 
-            # "hf_int": wandb.Image(hf_int_res_normalized.squeeze(0).squeeze(0).detach().cpu().numpy(), mode='L'), 
-            # "lf_op": wandb.Image(lf_output.view(size_lf).detach().cpu().numpy(), mode='L') 
             })
+            '''
         
         return model, losses
     def inference(self, model):
