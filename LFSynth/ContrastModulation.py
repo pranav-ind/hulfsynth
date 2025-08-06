@@ -43,6 +43,7 @@ class ContrastModulation:
       return img.squeeze(0)
   
   def forward(self, chunk_size, model_output_seg, model_output_img, M):
+    
     #for chunks #expected input shape = (B, C, H*W*D, 4)
     # size = (1, 1, 87, 96, 96)
     # size_lf = (87, 96, 96)

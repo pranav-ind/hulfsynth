@@ -125,6 +125,7 @@ class ModelTrainer(nn.Module):
     def __init__(self, config, lf_gt, prior_seg_dice, lf_gt_seg_dice, M):
         super(ModelTrainer, self).__init__()
         self.device = get_device()
+        # self.device = 'cpu'
         self.M = M
         config["in_features"] = 256 if(config["ffe"]==True) else  3
         print("Features = ", config["in_features"])
@@ -168,7 +169,7 @@ class ModelTrainer(nn.Module):
         self.prior_seg_dice = prior_seg_dice.to(self.device)
         self.lf_gt_seg_dice = lf_gt_seg_dice.to(self.device)
         self.l1, self.l2, self.l3, self.l4, self.l5 = config["l1"], config["l2"], config["l3"], config["l4"], config["l5"]
-        print("init complete")
+        print("init complete mt")
 
     def compute_loss(self, pred_lf_chunk, targ_chunk, model_output_seg, targ_seg_chunk, targ_prior_chunk, model_output_seg_pre, model_output_img):
 
@@ -213,7 +214,7 @@ class ModelTrainer(nn.Module):
         prior_per_epoch = 0.0
         tv_seg_per_epoch = 0.0
         tv_img_per_epoch = 0.0
-
+        print("executing train step fn....")
         for idx, patch_grid in (enumerate(coord_input_loader)):
             # coord_chunk = patch_grid #shape(1, 48, 43, 48, 3)
             patch_grid = patch_grid.to(self.device)
@@ -229,7 +230,7 @@ class ModelTrainer(nn.Module):
             targ_seg_chunk = target_seg_patch.reshape(1, 4, chunk_size_lf[0]*chunk_size_lf[1]*chunk_size_lf[2]).unsqueeze(-1) #output : (1,4, *chunk_lf, 1)
 
             model_output_seg_pre, model_output_seg, model_output_img, coords = model(coord_chunk)
-            # print('model_output_img = ', model_output_img.shape, model_output_seg.shape)
+            print('model_output_img = ', model_output_img.shape, model_output_seg.shape)
             pred_lf_chunk = self.phi.forward(chunk_size, model_output_seg, model_output_img, self.M) #shape (1,1,*chunk_lf)
             # print('pred_lf_chunk', pred_lf_chunk.shape, targ_chunk.shape)
             # print('model_output_seg', model_output_seg.shape)
@@ -264,7 +265,7 @@ class ModelTrainer(nn.Module):
         IO = torch.randn(hf_size, device = device) #index image
         #input 3D-coord grid
         
-        coord_input_loader = DataLoader(dataset=CoordsPatch(patch_size=patch_size, num_patches=num_patches_train, image=IO), batch_size=1, shuffle=True, num_workers=8, drop_last=True)
+        coord_input_loader = DataLoader(dataset=CoordsPatch(patch_size=patch_size, num_patches=num_patches_train, image=IO), batch_size=1, shuffle=False, num_workers=1, drop_last=True)
         # coord_input_loader_lf = DataLoader(dataset=CoordsPatch(patch_size=patch_size_lf, num_patches=num_patches_train, image=IO, is_low_res=False), batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
 
 
@@ -386,51 +387,50 @@ def visualize_volume_slices(volume1, volume2, axis=0, num_slices=16, title1='Vol
 
 
 
+if __name__ == '__main__':
+    config = copy.deepcopy(default_config)
+    config["ffe"] = False
+    config["in_features"] = 3 #3D input
+    config["lr"] = 1e-3
+    config["l1"] = 2.5
+    config["l2"] = 1e-2
+    config["l3"] = 1.0
+    config["l4"] =  [0.1,0.1,0.1,5]
+    config["l5"] = [5e-2, 5e-2, 5e-3, 9e-2]
+    config["w0"] = 30
 
+    config["total_steps"] = 1
 
-config = copy.deepcopy(default_config)
-config["ffe"] = False
-config["in_features"] = 3 #3D input
-config["lr"] = 1e-3
-config["l1"] = 2.5
-config["l2"] = 1e-2
-config["l3"] = 1.0
-config["l4"] =  [0.1,0.1,0.1,5]
-config["l5"] = [5e-2, 5e-2, 5e-3, 9e-2]
-config["w0"] = 30
-
-config["total_steps"] = 3
-
-# model = get_model(config).to(get_device())
-hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
-print(hf_ground_truth.shape, lf_gt.shape, prior_seg_dice.shape, lf_gt_seg_dice.shape )
-
-
-
-
-trainer = ModelTrainer(config, lf_gt, prior_seg_dice, lf_gt_seg_dice, M) #init
-model, losses = (trainer.train_inr())
-'''
-output_preds = trainer.inference(model)
-for idx, op in enumerate(output_preds):
-    torch.save(op, "./temporary/" + str(idx)+ ".pt")
-    print("saving to ", "./temporary/" + str(idx)+ ".pt" + "...")
+    # model = get_model(config).to(get_device())
+    hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
+    print(hf_ground_truth.shape, lf_gt.shape, prior_seg_dice.shape, lf_gt_seg_dice.shape )
 
 
 
-final_output_seg_pre, final_output_seg, final_output_img, output_coords = output_preds
-final_output_seg_pre = final_output_seg_pre.reshape(192, 174, 192,4)
-final_output_seg = final_output_seg.reshape(192, 174, 192,4)
-final_output_img = final_output_img.reshape(192, 174, 192,4)
-final_output = final_output_seg * final_output_img
+
+    trainer = ModelTrainer(config, lf_gt, prior_seg_dice, lf_gt_seg_dice, M) #init
+    model, losses = (trainer.train_inr())
+    '''
+    output_preds = trainer.inference(model)
+    for idx, op in enumerate(output_preds):
+        torch.save(op, "./temporary/" + str(idx)+ ".pt")
+        print("saving to ", "./temporary/" + str(idx)+ ".pt" + "...")
 
 
-fig1 = visualize_volume_slices(final_output[:,:,:,2], final_output_seg[:,:,:,2], axis=0, num_slices=16, title1='final_img2', title2='final_seg2')
-fig2 = visualize_volume_slices(final_output[:,:,:,1], final_output_seg[:,:,:,1], axis=0, num_slices=16, title1='final_img1', title2='final_seg1')
-fig_loss = loss_plot(losses)
 
-fig1.savefig("./temporary/fig1.png")
-fig2.savefig("./temporary/fig2.png")
-fig_loss.savefig("./temporary/fig_loss.png")
-torch.cuda.empty_cache()
-'''
+    final_output_seg_pre, final_output_seg, final_output_img, output_coords = output_preds
+    final_output_seg_pre = final_output_seg_pre.reshape(192, 174, 192,4)
+    final_output_seg = final_output_seg.reshape(192, 174, 192,4)
+    final_output_img = final_output_img.reshape(192, 174, 192,4)
+    final_output = final_output_seg * final_output_img
+
+
+    fig1 = visualize_volume_slices(final_output[:,:,:,2], final_output_seg[:,:,:,2], axis=0, num_slices=16, title1='final_img2', title2='final_seg2')
+    fig2 = visualize_volume_slices(final_output[:,:,:,1], final_output_seg[:,:,:,1], axis=0, num_slices=16, title1='final_img1', title2='final_seg1')
+    fig_loss = loss_plot(losses)
+
+    fig1.savefig("./temporary/fig1.png")
+    fig2.savefig("./temporary/fig2.png")
+    fig_loss.savefig("./temporary/fig_loss.png")
+    torch.cuda.empty_cache()
+    '''
