@@ -238,13 +238,13 @@ class ModelTrainer(nn.Module):
             loss.backward() 
             
             #visualize observed patches 
-            wandb.log({
-            "seg_patch": wandb.Image((targ_seg_chunk[:,2].view(chunk_size_lf[0], chunk_size_lf[1], chunk_size_lf[2]))[5].detach().cpu().numpy(), mode='L'), #random slice=5
-            "seg_pred_patch": wandb.Image((model_output_seg[:,2].view(chunk_size_lf[0], chunk_size_lf[1], chunk_size_lf[2]))[5].detach().cpu().numpy(), mode='L') #random slice=5,
+            # wandb.log({
+            # "seg_patch": wandb.Image((targ_seg_chunk[:,2].view(chunk_size_lf[0], chunk_size_lf[1], chunk_size_lf[2]))[5].detach().cpu().numpy(), mode='L'), #random slice=5
+            # "seg_pred_patch": wandb.Image((model_output_seg[:,2].view(chunk_size_lf[0], chunk_size_lf[1], chunk_size_lf[2]))[5].detach().cpu().numpy(), mode='L') #random slice=5,
             
-            # "hf_int": wandb.Image(hf_int_res_normalized.squeeze(0).squeeze(0).detach().cpu().numpy(), mode='L'), 
-            # "lf_op": wandb.Image(lf_output.view(size_lf).detach().cpu().numpy(), mode='L') 
-            })
+            # # "hf_int": wandb.Image(hf_int_res_normalized.squeeze(0).squeeze(0).detach().cpu().numpy(), mode='L'), 
+            # # "lf_op": wandb.Image(lf_output.view(size_lf).detach().cpu().numpy(), mode='L') 
+            # })
             
             loss_per_epoch += loss #loss per epoch
             mse_per_epoch += L_mse 
@@ -310,7 +310,7 @@ class ModelTrainer(nn.Module):
             torch.cuda.synchronize()
             optimizer.step()
             # self.scheduler.step()
-            '''
+            
             # uncomment to log losses in wandb
             wandb.log({"total_loss": losses["Total_Loss"][-1],
             "mse": losses["mse"][-1], 
@@ -319,7 +319,7 @@ class ModelTrainer(nn.Module):
             "tv_seg": losses["TV_seg"][-1], 
             "tv_img": losses["TV_img"][-1], 
             })
-            '''
+            
         
         return model, losses
     def inference(self, model):
@@ -418,7 +418,7 @@ if __name__ == '__main__':
     config["l5"] = [5e-2, 5e-2, 5e-3, 9e-2]
     config["w0"] = 30
 
-    config["total_steps"] = 2
+    config["total_steps"] = 10
 
     # model = get_model(config).to(get_device())
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
