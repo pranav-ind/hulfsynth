@@ -412,13 +412,13 @@ if __name__ == '__main__':
     config["in_features"] = 3 #3D input
     config["lr"] = 1e-3
     config["l1"] = 2.5
-    config["l2"] = 1e-6
+    config["l2"] = 1e-8
     config["l3"] = 1.0
     config["l4"] =  [5e-3, 5e-3, 5e-3, 5e-3]
     config["l5"] = [5e-2, 5e-2, 5e-3, 9e-2]
     config["w0"] = 30
 
-    config["total_steps"] = 450
+    config["total_steps"] = 3
 
     # model = get_model(config).to(get_device())
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
@@ -432,6 +432,13 @@ if __name__ == '__main__':
 
     trainer = ModelTrainer(config, lf_gt, prior_seg_dice, lf_gt_seg_dice, M) #init
     model, losses = (trainer.train_inr())
+    model_saving_path =  "./wandb/saved_models/model.onnx"
+    torch.onnx.export(trainer.model, trainer.model_input, model_saving_path)
+    print("locally saved model to: ", model_saving_path)
+    wandb.save(model_saving_path)
+
+    run.log_model(path=model_saving_path, name="model")
+    run.finish()
 
     '''
     output_preds = trainer.inference(model)
