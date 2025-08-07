@@ -143,9 +143,9 @@ class ModelTrainer(nn.Module):
         self.chunk = (192*172*192)//64 #init chunk via config
         # self.patch_size = [48, 44, 48] #init patch_size via config
         # self.patch_size = [96, 86, 96] #init patch_size via config
-        self.patch_size = [24, 22, 24] #init patch_size via config
+        self.patch_size = [48, 44, 48] #init patch_size via config
         self.patch_size_lf = (self.patch_size[0], self.patch_size[1]//2, self.patch_size[2]//2) #init chunk_size via config
-        self.num_patches_train = 120 #init num_patches_train via config
+        self.num_patches_train = 80 #init num_patches_train via config
         self.hf_size = (192, 172, 192) #init hf_size via config
         self.lf_size = (192, 88, 96) #init lf_size via config
 
@@ -412,9 +412,9 @@ if __name__ == '__main__':
     config["in_features"] = 3 #3D input
     config["lr"] = 1e-3
     config["l1"] = 2.5
-    config["l2"] = 1e-2
+    config["l2"] = 1e-6
     config["l3"] = 1.0
-    config["l4"] =  [0.1,0.1,0.1,5]
+    config["l4"] =  [5e-3, 5e-3, 5e-3, 5e-3]
     config["l5"] = [5e-2, 5e-2, 5e-3, 9e-2]
     config["w0"] = 30
 
@@ -432,6 +432,7 @@ if __name__ == '__main__':
 
     trainer = ModelTrainer(config, lf_gt, prior_seg_dice, lf_gt_seg_dice, M) #init
     model, losses = (trainer.train_inr())
+
     '''
     output_preds = trainer.inference(model)
     for idx, op in enumerate(output_preds):

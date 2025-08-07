@@ -18,7 +18,7 @@ import copy
 import warnings
 warnings.filterwarnings("ignore")
 from tqdm import tqdm, tqdm_notebook
-
+from IPython.display import clear_output
 
 
 
@@ -101,10 +101,82 @@ class CoordsPatch(Dataset):
         return coords
 
 
+def visualize_volume_slices(volume1, volume2, axis=0, num_slices=16, title1='Volume 1', title2='Volume 2'):
+    """
+    Visualizes `num_slices` slices from two 3D volumes side-by-side.
+    
+    Args:
+        volume1 (torch.Tensor): 3D tensor (D, H, W)
+        volume2 (torch.Tensor): 3D tensor (D, H, W)
+        axis (int): Axis along which to slice (0=z, 1=y, 2=x)
+        num_slices (int): Number of slices to show (default=16)
+        title1 (str): Title for first volume
+        title2 (str): Title for second volume
+    """
+
+    # assert volume1.shape == volume2.shape, "Volumes must be the same shape"
+    assert volume1.dim() == 3, "Volumes must be 3D tensors"
+
+    # Select slice indices (evenly spaced)
+    dim = volume1.shape[axis]
+    step = max(dim // num_slices, 1)
+    slice_indices = list(range(0, dim, step))[:num_slices]
+
+    fig, axes = plt.subplots(4, num_slices // 2, figsize=(16, 8))
+    axes = axes.flatten()
+
+    for i, idx in enumerate(slice_indices):
+        if axis == 0:
+            slice1 = volume1[idx, :, :].cpu().numpy()
+            slice2 = volume2[idx, :, :].cpu().numpy()
+        elif axis == 1:
+            slice1 = volume1[:, idx, :].cpu().numpy()
+            slice2 = volume2[:, idx, :].cpu().numpy()
+        elif axis == 2:
+            slice1 = volume1[:, :, idx].cpu().numpy()
+            slice2 = volume2[:, :, idx].cpu().numpy()
+        else:
+            raise ValueError("Invalid axis")
+
+        axes[i].imshow(slice1, cmap='gray')
+        axes[i].set_title(f'{title1} - Slice {idx}')
+        axes[i].axis('off')
+
+        # Add the second volume slice in the next row (offset by num_slices)
+        axes[i + num_slices].imshow(slice2, cmap='gray')
+        axes[i + num_slices].set_title(f'{title2} - Slice {idx}')
+        axes[i + num_slices].axis('off')
+
+    plt.tight_layout()
+    # plt.show()
+    return fig
+
+
 #helper functions : chunk_size = (86, 96, 96) and lf = (43, 48, 96)
 if __name__ == '__main__':
-    patch_size = [24, 22, 24]
+    patch_size = [48, 44, 48]
     IO = torch.randn(192, 172, 172)
-    coord_input_loader = DataLoader(dataset=CoordsPatch(patch_size=patch_size, num_patches=120, image=IO), batch_size=1, shuffle=False, num_workers=4, drop_last=True)
-    op = next(iter(coord_input_loader))
-    print(type(op))
+    coord_input_loader = DataLoader(dataset=CoordsPatch(patch_size=patch_size, num_patches=70, image=IO), batch_size=1, shuffle=False, num_workers=4, drop_last=True)
+    # op = next(iter(coord_input_loader))
+    # print(type(op))
+    device = 'cpu'
+    config = copy.deepcopy(default_config)
+    hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
+    target_gt = F.pad(torch.from_numpy(lf_gt).to(torch.float32), (0, 0, 0, 0, 0, 1)).to(device).permute(2,0,1) #shape : [192, 88, 96]
+    target_seg = F.pad(lf_gt_seg_dice.to(torch.float32), (0, 0, 0, 0, 0, 1)).to(device).permute(0,1,4,2,3) #shape : [1, 4, 192, 88, 96]
+
+    # print(target_gt.shape, target_seg.shape)
+
+    for idx, patch_grid in (enumerate(coord_input_loader)):
+        # coord_chunk = patch_grid #shape(1, 48, 43, 48, 3)
+        patch_grid = patch_grid.to(device)
+        target_patch = F.grid_sample(target_gt.unsqueeze(0).unsqueeze(0), patch_grid, mode='bilinear')[:,:,:,::2,::2] #output : (1,1, 48,22,24) #for 5D-input, bilinear == trilinear 
+        target_seg_patch = F.grid_sample(target_seg, patch_grid, mode='bilinear')[:,:,:,::2,::2] #output : (1,4, 48,22,24)
+        # print("ID: ", idx, target_patch.shape, target_seg_patch.shape)
+        # if(idx%50==0):
+        #     clear_output(wait=True)
+        fig = visualize_volume_slices(target_patch.squeeze(0).squeeze(0), target_seg_patch.squeeze(0)[2], axis=0, num_slices=20, title1='gt', title2='seg_gt')
+        # plt.show()
+        fig.savefig('/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/temp_patches/'+ str(idx) + '.png')
+
+
