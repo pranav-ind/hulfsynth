@@ -418,7 +418,7 @@ if __name__ == '__main__':
     config["l5"] = [5e-2, 5e-2, 5e-3, 9e-2]
     config["w0"] = 30
 
-    config["total_steps"] = 5
+    config["total_steps"] = 1
 
     # model = get_model(config).to(get_device())
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
@@ -434,7 +434,7 @@ if __name__ == '__main__':
     model, losses = (trainer.train_inr())
     
     model_saving_path =  "./wandb/saved_models/model.onnx"
-    torch.onnx.export(trainer.model, trainer.coord_chunk, model_saving_path)
+    torch.onnx.export(trainer.model, trainer.coord_chunk, model_saving_path, dynamo=True)
     print("locally saved model to: ", model_saving_path)
     wandb.save(model_saving_path)
 
