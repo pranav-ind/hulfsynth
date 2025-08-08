@@ -19,7 +19,8 @@ import warnings
 warnings.filterwarnings("ignore")
 from tqdm import tqdm, tqdm_notebook
 from IPython.display import clear_output
-
+import wandb
+import random
 
 
 from Models.models import Siren, Finer
@@ -29,7 +30,7 @@ from Utils.defaults import default_config
 from Utils.plotting_utils2 import plot_seg_results_paper, plot_final_results_paper, plot_hf_results_paper
 from Utils.plotting_utils import loss_plot, plot_image_metrics, plot_4_images
 from LFSynth.ContrastModulation import ContrastModulation
-
+from test3D import ModelTrainer
 
 def define_coords(img_shape) -> torch.Tensor:
     """
@@ -156,7 +157,7 @@ def visualize_volume_slices(volume1, volume2, axis=0, num_slices=16, title1='Vol
 if __name__ == '__main__':
     patch_size = [48, 44, 48]
     IO = torch.randn(192, 172, 172)
-    coord_input_loader = DataLoader(dataset=CoordsPatch(patch_size=patch_size, num_patches=70, image=IO), batch_size=1, shuffle=False, num_workers=4, drop_last=True)
+    coord_input_loader = DataLoader(dataset=CoordsPatch(patch_size=patch_size, num_patches=5, image=IO), batch_size=1, shuffle=False, num_workers=4, drop_last=True)
     # op = next(iter(coord_input_loader))
     # print(type(op))
     device = 'cpu'
@@ -165,18 +166,45 @@ if __name__ == '__main__':
     target_gt = F.pad(torch.from_numpy(lf_gt).to(torch.float32), (0, 0, 0, 0, 0, 1)).to(device).permute(2,0,1) #shape : [192, 88, 96]
     target_seg = F.pad(lf_gt_seg_dice.to(torch.float32), (0, 0, 0, 0, 0, 1)).to(device).permute(0,1,4,2,3) #shape : [1, 4, 192, 88, 96]
 
-    # print(target_gt.shape, target_seg.shape)
+    project_ = "hulfsynth_ulfenc"
+    # run_name = "run_" + str(run_id)
+    wandb.login()
+    run = wandb.init(project=project_)
 
-    for idx, patch_grid in (enumerate(coord_input_loader)):
-        # coord_chunk = patch_grid #shape(1, 48, 43, 48, 3)
-        patch_grid = patch_grid.to(device)
-        target_patch = F.grid_sample(target_gt.unsqueeze(0).unsqueeze(0), patch_grid, mode='bilinear')[:,:,:,::2,::2] #output : (1,1, 48,22,24) #for 5D-input, bilinear == trilinear 
-        target_seg_patch = F.grid_sample(target_seg, patch_grid, mode='bilinear')[:,:,:,::2,::2] #output : (1,4, 48,22,24)
-        # print("ID: ", idx, target_patch.shape, target_seg_patch.shape)
-        # if(idx%50==0):
-        #     clear_output(wait=True)
-        fig = visualize_volume_slices(target_patch.squeeze(0).squeeze(0), target_seg_patch.squeeze(0)[2], axis=0, num_slices=20, title1='gt', title2='seg_gt')
-        # plt.show()
-        fig.savefig('/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/temp_patches/'+ str(idx) + '.png')
+    # print(target_gt.shape, target_seg.shape)
+    with run:
+        for idx, patch_grid in (enumerate(coord_input_loader)):
+            # coord_chunk = patch_grid #shape(1, 48, 43, 48, 3)
+            patch_grid = patch_grid.to(device)
+            target_patch = F.grid_sample(target_gt.unsqueeze(0).unsqueeze(0), patch_grid, mode='bilinear')[:,:,:,::2,::2] #output : (1,1, 48,22,24) #for 5D-input, bilinear == trilinear 
+            target_seg_patch = F.grid_sample(target_seg, patch_grid, mode='bilinear')[:,:,:,::2,::2] #output : (1,4, 48,22,24)
+            # print("ID: ", idx, target_patch.shape, target_seg_patch.shape)
+            # if(idx%50==0):
+            #     clear_output(wait=True)
+            # fig = visualize_volume_slices(target_patch.squeeze(0).squeeze(0), target_seg_patch.squeeze(0)[2], axis=0, num_slices=20, title1='gt', title2='seg_gt')
+            # plt.show()
+            # fig.savefig('/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/temp_patches/'+ str(idx) + '.png')
+
+            # path_to_obj = "../input/kernel-files/wolf.obj"
+            # Initialize run
+            # wandb.init()
+
+            # wandb.log({"3d_object":wandb.Object3D(target_patch.squeeze(0).squeeze(0).detach().cpu().numpy().reshape(-1,3))})  # Log 3D object
+            n_slice = random.randint(1, 48)
+            wandb.log({
+                "target_patch": wandb.Image(target_patch.squeeze(0).squeeze(0)[n_slice].cpu().numpy() , mode='L'), #random slice=5
+                "seg_patch": wandb.Image(target_seg_patch.squeeze(0)[2,n_slice].cpu().numpy(), mode='L') #random slice=5,
+            })
+
+    trainer = ModelTrainer(config, lf_gt, prior_seg_dice, lf_gt_seg_dice, M) #init
+    model, losses = (trainer.train_inr())
+    model_saving_path =  "./temp_model.onnx"
+    torch.onnx.export(model, trainer.coord_chunk, model_saving_path, dynamo=True)
+    print("locally saved model to: ", model_saving_path)
+    wandb.save(model_saving_path)
+
+    run.log_model(path=model_saving_path, name="model")
+    run.finish()
+
 
 

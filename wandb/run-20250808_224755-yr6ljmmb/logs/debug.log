@@ -1,0 +1,6 @@
+2025-08-08 22:47:55,588 INFO    MainThread:11578 [wandb_init.py:setup_run_log_directory():703] Logging user logs to /Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/wandb/run-20250808_224755-yr6ljmmb/logs/debug.log
+2025-08-08 22:47:55,589 INFO    MainThread:11578 [wandb_init.py:setup_run_log_directory():704] Logging internal logs to /Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/wandb/run-20250808_224755-yr6ljmmb/logs/debug-internal.log
+2025-08-08 22:47:55,589 INFO    MainThread:11578 [wandb_init.py:init():831] calling init triggers
+2025-08-08 22:47:55,589 INFO    MainThread:11578 [wandb_init.py:init():836] wandb.init called with sweep_config: {}
+config: {'_wandb': {}}
+2025-08-08 22:47:57,837 INFO    MsgRouterThr:11578 [mailbox.py:close():129] [no run ID] Closing mailbox, abandoning 1 handles.

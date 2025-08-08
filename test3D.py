@@ -255,6 +255,7 @@ class ModelTrainer(nn.Module):
             
 
             self.coord_chunk = coord_chunk #to save model
+            print(self.coord_chunk.shape, coord_chunk.shape)
 
         return model, loss_per_epoch, mse_per_epoch, seg_per_epoch, prior_per_epoch, tv_seg_per_epoch, tv_img_per_epoch
     
@@ -434,7 +435,7 @@ if __name__ == '__main__':
     model, losses = (trainer.train_inr())
     
     model_saving_path =  "./wandb/saved_models/model.onnx"
-    torch.onnx.export(trainer.model, trainer.coord_chunk, model_saving_path, dynamo=True)
+    torch.onnx.export(model, trainer.coord_chunk, model_saving_path)
     print("locally saved model to: ", model_saving_path)
     wandb.save(model_saving_path)
 

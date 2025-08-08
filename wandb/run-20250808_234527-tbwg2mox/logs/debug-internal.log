@@ -1,0 +1,16 @@
+{"time":"2025-08-08T23:45:27.7946+05:30","level":"INFO","msg":"stream: starting","core version":"0.20.1","symlink path":"/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/wandb/run-20250808_234527-tbwg2mox/logs/debug-core.log"}
+{"time":"2025-08-08T23:45:28.90773+05:30","level":"INFO","msg":"stream: created new stream","id":"tbwg2mox"}
+{"time":"2025-08-08T23:45:28.907796+05:30","level":"INFO","msg":"stream: started","id":"tbwg2mox"}
+{"time":"2025-08-08T23:45:28.907839+05:30","level":"INFO","msg":"writer: Do: started","stream_id":"tbwg2mox"}
+{"time":"2025-08-08T23:45:28.907892+05:30","level":"INFO","msg":"sender: started","stream_id":"tbwg2mox"}
+{"time":"2025-08-08T23:45:28.90786+05:30","level":"INFO","msg":"handler: started","stream_id":"tbwg2mox"}
+{"time":"2025-08-08T23:45:29.292892+05:30","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-08-08T23:45:39.244256+05:30","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-08-08T23:45:39.245026+05:30","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-08-08T23:45:40.249671+05:30","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading config.yaml","runtime_seconds":0.345903792,"progress":"613B/613B"}],"total_operations":1}}
+{"time":"2025-08-08T23:45:40.292506+05:30","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-08-08T23:45:40.93024+05:30","level":"INFO","msg":"stream: closing","id":"tbwg2mox"}
+{"time":"2025-08-08T23:45:40.930266+05:30","level":"INFO","msg":"handler: closed","stream_id":"tbwg2mox"}
+{"time":"2025-08-08T23:45:40.930304+05:30","level":"INFO","msg":"writer: Close: closed","stream_id":"tbwg2mox"}
+{"time":"2025-08-08T23:45:40.930405+05:30","level":"INFO","msg":"sender: closed","stream_id":"tbwg2mox"}
+{"time":"2025-08-08T23:45:40.930677+05:30","level":"INFO","msg":"stream: closed","id":"tbwg2mox"}

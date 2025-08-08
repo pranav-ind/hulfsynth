@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/sampletest3D.py", line 196, in <module>
+    "seg_patch": wandb.Image(target_seg_patch.squeeze(0)[2,n_slice], mode='L') #random slice=5,
+  File "/Users/pi58/opt/anaconda3/envs/mri_recon/lib/python3.10/site-packages/wandb/sdk/data_types/image.py", line 266, in __init__
+    self._initialize_from_data(data_or_path, mode, file_type, normalize)
+  File "/Users/pi58/opt/anaconda3/envs/mri_recon/lib/python3.10/site-packages/wandb/sdk/data_types/image.py", line 406, in _initialize_from_data
+    data = data.permute(1, 2, 0).cpu().numpy()  # type: ignore [union-attr]
+RuntimeError: permute(sparse_coo): number of dimensions in the tensor input does not match the length of the desired ordering of dimensions i.e. input.dim() = 2 is not equal to len(dims) = 3

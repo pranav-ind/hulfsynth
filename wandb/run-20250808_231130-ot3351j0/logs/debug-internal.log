@@ -1,0 +1,16 @@
+{"time":"2025-08-08T23:11:30.687638+05:30","level":"INFO","msg":"stream: starting","core version":"0.20.1","symlink path":"/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/wandb/run-20250808_231130-ot3351j0/logs/debug-core.log"}
+{"time":"2025-08-08T23:11:31.796069+05:30","level":"INFO","msg":"stream: created new stream","id":"ot3351j0"}
+{"time":"2025-08-08T23:11:31.796134+05:30","level":"INFO","msg":"stream: started","id":"ot3351j0"}
+{"time":"2025-08-08T23:11:31.796181+05:30","level":"INFO","msg":"sender: started","stream_id":"ot3351j0"}
+{"time":"2025-08-08T23:11:31.796189+05:30","level":"INFO","msg":"writer: Do: started","stream_id":"ot3351j0"}
+{"time":"2025-08-08T23:11:31.796215+05:30","level":"INFO","msg":"handler: started","stream_id":"ot3351j0"}
+{"time":"2025-08-08T23:11:32.172282+05:30","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-08-08T23:11:42.228463+05:30","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-08-08T23:11:42.228848+05:30","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-08-08T23:11:43.253211+05:30","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading wandb-summary.json","runtime_seconds":0.692595125,"progress":"285B/285B"},{"desc":"uploading media/object3D/3d_object_0_28181c8eb0e8ffa0836f.pts.json","runtime_seconds":0.692549,"progress":"813.0KB/813.0KB"},{"desc":"uploading config.yaml","runtime_seconds":0.34244125,"progress":"592B/592B"}],"total_operations":3}}
+{"time":"2025-08-08T23:11:43.871707+05:30","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-08-08T23:11:44.559827+05:30","level":"INFO","msg":"stream: closing","id":"ot3351j0"}
+{"time":"2025-08-08T23:11:44.559853+05:30","level":"INFO","msg":"handler: closed","stream_id":"ot3351j0"}
+{"time":"2025-08-08T23:11:44.559946+05:30","level":"INFO","msg":"writer: Close: closed","stream_id":"ot3351j0"}
+{"time":"2025-08-08T23:11:44.560004+05:30","level":"INFO","msg":"sender: closed","stream_id":"ot3351j0"}
+{"time":"2025-08-08T23:11:44.560352+05:30","level":"INFO","msg":"stream: closed","id":"ot3351j0"}
