@@ -418,7 +418,7 @@ if __name__ == '__main__':
     config["l5"] = [5e-2, 5e-2, 5e-3, 9e-2]
     config["w0"] = 30
 
-    config["total_steps"] = 1250
+    config["total_steps"] = 5
 
     # model = get_model(config).to(get_device())
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
