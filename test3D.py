@@ -436,7 +436,7 @@ if __name__ == '__main__':
     
     model_saving_path =  "./wandb/saved_models/model.onnx"
     dummy_input = torch.randn(1, 101376, 3)
-    torch.onnx.export(model, dummy_input, model_saving_path)
+    torch.onnx.export(model, trainer.coord_chunk, model_saving_path)
     print("locally saved model to: ", model_saving_path)
     wandb.save(model_saving_path)
 
