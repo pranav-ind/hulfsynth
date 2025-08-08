@@ -245,14 +245,14 @@ class ModelTrainer(nn.Module):
             # # "hf_int": wandb.Image(hf_int_res_normalized.squeeze(0).squeeze(0).detach().cpu().numpy(), mode='L'), 
             # # "lf_op": wandb.Image(lf_output.view(size_lf).detach().cpu().numpy(), mode='L') 
             # })
-
+            '''
             n_slice = random.randint(1, 48)
             wandb.log({
                 # "target_patch": wandb.Image(target_patch.squeeze(0).squeeze(0)[n_slice].cpu().numpy() , mode='L'), #random slice=5
                 "seg_patch": wandb.Image(target_seg_patch.squeeze(0)[2,n_slice].cpu().numpy(), mode='L'), #random slice=5,
                 "pred_seg_patch": wandb.Image(model_output_seg.squeeze(0)[2].view(48, 22, 24).cpu().numpy(), mode='L') #random slice=5,
             })
-            
+            '''
             loss_per_epoch += loss #loss per epoch
             mse_per_epoch += L_mse 
             seg_per_epoch += L_seg
