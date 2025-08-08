@@ -131,7 +131,7 @@ class ModelTrainer(nn.Module):
         print("Features = ", config["in_features"])
         self.config = config
         self.model = get_model(config).to(self.device)
-        self.model = torch.compile(self.model) #fastens inference
+        # self.model = torch.compile(self.model) #fastens inference
         self.lr = config["lr"]
         self.scheduler_step_size=config["scheduler_step_size"]
         self.scheduler_gamma = gamma=config["scheduler_gamma"]
