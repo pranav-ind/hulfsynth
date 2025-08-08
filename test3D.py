@@ -254,7 +254,7 @@ class ModelTrainer(nn.Module):
             tv_img_per_epoch += TV_img
             
 
-
+            self.patch_grid = patch_grid
 
         return model, loss_per_epoch, mse_per_epoch, seg_per_epoch, prior_per_epoch, tv_seg_per_epoch, tv_img_per_epoch
     
@@ -418,7 +418,7 @@ if __name__ == '__main__':
     config["l5"] = [5e-2, 5e-2, 5e-3, 9e-2]
     config["w0"] = 30
 
-    config["total_steps"] = 3
+    config["total_steps"] = 1250
 
     # model = get_model(config).to(get_device())
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
@@ -432,8 +432,9 @@ if __name__ == '__main__':
 
     trainer = ModelTrainer(config, lf_gt, prior_seg_dice, lf_gt_seg_dice, M) #init
     model, losses = (trainer.train_inr())
+    
     model_saving_path =  "./wandb/saved_models/model.onnx"
-    torch.onnx.export(trainer.model, trainer.model_input, model_saving_path)
+    torch.onnx.export(trainer.model, trainer.patch_grid, model_saving_path)
     print("locally saved model to: ", model_saving_path)
     wandb.save(model_saving_path)
 
