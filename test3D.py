@@ -420,7 +420,7 @@ if __name__ == '__main__':
     config["in_features"] = 3 #3D input
     config["lr"] = 1e-3
     config["l1"] = 2.5
-    config["l2"] = 1e-8
+    config["l2"] = 1e-10
     config["l3"] = 1.0
     config["l4"] =  [5e-3, 5e-3, 5e-3, 5e-3]
     config["l5"] = [5e-2, 5e-2, 5e-3, 9e-2]
