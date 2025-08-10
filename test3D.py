@@ -178,19 +178,20 @@ class ModelTrainer(nn.Module):
         # print("output shapes : ", lf_output.shape,lf_gt.shape, model_output_img.shape) 
         
         #MSE
-        L_mse = l1 * F.mse_loss(pred_lf_chunk, targ_chunk.float()) #/ n_chunks  # normalize
-        
-        
-        #Segmentation
-        lf_pred_seg_dice = lf_seg_loss(model_output_seg, chunk_size)
-        # print("lf_pred_seg_dice", lf_pred_seg_dice.shape, "targ_seg_chunk", targ_seg_chunk.shape)
-        targ_seg_chunk = targ_seg_chunk.reshape(lf_pred_seg_dice.shape)
-        L_seg= l2 * (self.dice(targ_seg_chunk, lf_pred_seg_dice))
+        L_mse = l1 * F.mse_loss(pred_lf_chunk, targ_chunk.float()) #/ n_chunks  # normalize    
 
         #Prior
         model_output_seg_dice = torch.stack((model_output_seg[:,:,3].reshape(chunk_size), model_output_seg[:,:,0].reshape(chunk_size), model_output_seg[:,:,1].reshape(chunk_size), model_output_seg[:,:,2].reshape(chunk_size)), dim=0).unsqueeze(0)
         targ_prior_chunk = targ_prior_chunk.reshape(model_output_seg_dice.shape)
-        L_prior = l3 * (self.dice(targ_prior_chunk, model_output_seg_dice))
+        L_prior = l2 * (self.dice(targ_prior_chunk, model_output_seg_dice))
+
+
+        #Segmentation
+        lf_pred_seg_dice = lf_seg_loss(model_output_seg, chunk_size)
+        # print("lf_pred_seg_dice", lf_pred_seg_dice.shape, "targ_seg_chunk", targ_seg_chunk.shape)
+        targ_seg_chunk = targ_seg_chunk.reshape(lf_pred_seg_dice.shape)
+        L_seg= l3 * (self.dice(targ_seg_chunk, lf_pred_seg_dice))
+
 
         #Total Variation
         TV_seg = ((l4[0] * total_variation(model_output_seg_pre[0,:,0].view(chunk_size), reduction='mean')) + (l4[1]* total_variation(model_output_seg_pre[0,:,1].view(chunk_size), reduction='mean')) + (l4[2] * total_variation(model_output_seg_pre[0,:,2].view(chunk_size), reduction='mean')) + (l4[3] * total_variation(model_output_seg_pre[0,:,3].view(chunk_size), reduction='mean'))).mean()
@@ -420,7 +421,7 @@ if __name__ == '__main__':
     config["in_features"] = 3 #3D input
     config["lr"] = 1e-3
     config["l1"] = 2.5
-    config["l2"] = 1e-10
+    config["l2"] = 1e-3
     config["l3"] = 1.0
     config["l4"] =  [5e-3, 5e-3, 5e-3, 5e-3]
     config["l5"] = [5e-2, 5e-2, 5e-3, 9e-2]
