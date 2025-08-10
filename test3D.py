@@ -419,15 +419,15 @@ if __name__ == '__main__':
     config = copy.deepcopy(default_config)
     config["ffe"] = False
     config["in_features"] = 3 #3D input
-    config["lr"] = 2.5e-4
-    config["l1"] = 2.0
-    config["l2"] = 1e-3
-    config["l3"] = 1.25
-    config["l4"] =  [5e-3, 5e-3, 5e-3, 5e-3]
-    config["l5"] = [5e-2, 5e-2, 5e-3, 9e-2]
-    config["w0"] = 25
+    config["lr"] = 7.5e-4
+    config["l1"] = 2.75
+    config["l2"] = 1e-4
+    config["l3"] = 2.75
+    config["l4"] =  [5e-4, 5e-4, 5e-4, 5e-4]
+    config["l5"] = [5e-3, 5e-3, 5e-3, 9e-3]
+    config["w0"] = 30
 
-    config["total_steps"] = 1250
+    config["total_steps"] = 750
 
     # model = get_model(config).to(get_device())
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
