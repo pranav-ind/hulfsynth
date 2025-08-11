@@ -432,7 +432,7 @@ def wand_train():
         config_["l1"] = wandb.config.l1
         config_["l5"] = wandb.config.l5
         # model = get_model(config).to(get_device())
-        hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
+        hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config_) #uncomment
         # print(hf_ground_truth.shape, lf_gt.shape, prior_seg_dice.shape, lf_gt_seg_dice.shape )
 
 
@@ -441,7 +441,7 @@ def wand_train():
         run = wandb.init(project=project_)
 
 
-        trainer = ModelTrainer(config, lf_gt, prior_seg_dice, lf_gt_seg_dice, M) #init
+        trainer = ModelTrainer(config_, lf_gt, prior_seg_dice, lf_gt_seg_dice, M) #init
         model, losses = (trainer.train_inr())
         
         model_saving_path =  "./wandb/saved_models/model.onnx"
@@ -461,7 +461,6 @@ if __name__ == '__main__':
     wandb.login()
     config = copy.deepcopy(default_config)
     config["ffe"] = False
-    config["total_steps"] = 2
     sweep_config = {
         "method": "random",
         "metric": {"goal": "minimize", "name": "total_loss"},
