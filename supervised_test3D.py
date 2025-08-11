@@ -304,7 +304,7 @@ class ModelTrainer(nn.Module):
         target_gt = F.pad(lf_gt, (0, 0, 0, 0, 0, 1)).to(device).permute(2,0,1) #shape : [192, 88, 96]
         target_seg = F.pad(lf_gt_seg_dice, (0, 0, 0, 0, 0, 1)).to(device).permute(0,1,4,2,3) #shape : [1, 4, 192, 88, 96]
         target_prior = prior_seg_dice[:,:,1:-1,:,:].to(device).permute(0,1,4,2,3) #shape : [1, 4, 192, 172, 192]
-        target_hf = torch.from_numpy(hf_ground_truth)[:,1:-1,:].to(device) #shape: [192, 172, 192]
+        target_hf = torch.from_numpy(hf_ground_truth)[:,1:-1,:].to(device).float() #shape: [192, 172, 192]
         # IO = torch.arange(192*172*192).reshape(192, 172, 192).to(device)  # Example index image
         
         
