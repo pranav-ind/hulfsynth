@@ -492,6 +492,6 @@ if __name__ == '__main__':
 
     # models_path = "./wandb/saved_models/"
     sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth_ulfenc")
-    wandb.agent(sweep_id, function=wand_train, count=2)
+    wandb.agent(sweep_id, function=wand_train, count=10)
 
 
