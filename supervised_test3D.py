@@ -201,7 +201,7 @@ class ModelTrainer(nn.Module):
         #supervised loss
         model_output_img_dice = torch.stack((model_output_img[:,:,3].reshape(chunk_size), model_output_img[:,:,0].reshape(chunk_size), model_output_img[:,:,1].reshape(chunk_size), model_output_img[:,:,2].reshape(chunk_size)), dim=0).unsqueeze(0)
         final_img_chunk = model_output_img_dice[0,0] + model_output_img_dice[0,1] + model_output_img_dice[0,2] + model_output_img_dice[0,3]
-        mse_hf = F.mse_loss(final_img_chunk.flatten(), targ_hf_chunk.flatten().float())
+        mse_hf = F.mse_loss(final_img_chunk.flatten(), targ_hf_chunk.flatten().float(), reduction='mean')
 
         #Total Loss
         loss = L_mse + L_prior + L_seg  + TV_seg + TV_img + mse_hf #+ grad_reg_seg + grad_reg_img 
@@ -305,7 +305,7 @@ class ModelTrainer(nn.Module):
         target_gt = F.pad(lf_gt, (0, 0, 0, 0, 0, 1)).to(device).permute(2,0,1) #shape : [192, 88, 96]
         target_seg = F.pad(lf_gt_seg_dice, (0, 0, 0, 0, 0, 1)).to(device).permute(0,1,4,2,3) #shape : [1, 4, 192, 88, 96]
         target_prior = prior_seg_dice[:,:,1:-1,:,:].to(device).permute(0,1,4,2,3) #shape : [1, 4, 192, 172, 192]
-        target_hf = torch.from_numpy(hf_ground_truth)[:,1:-1,:].to(device).float() #shape: [192, 172, 192]
+        target_hf = torch.from_numpy(norm(hf_ground_truth))[:,1:-1,:].to(device).float() #shape: [192, 172, 192]
         # IO = torch.arange(192*172*192).reshape(192, 172, 192).to(device)  # Example index image
         
         
@@ -435,9 +435,9 @@ if __name__ == '__main__':
     config["l3"] = 2.75
     config["l4"] =  [5e-4, 5e-4, 5e-4, 5e-4]
     config["l5"] = [5e-3, 5e-3, 5e-3, 9e-3]
-    config["w0"] = 30
+    config["w0"] = 25
 
-    config["total_steps"] = 1250
+    config["total_steps"] = 1000
 
     # model = get_model(config).to(get_device())
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
