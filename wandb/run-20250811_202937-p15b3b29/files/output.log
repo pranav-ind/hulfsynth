@@ -1,5 +1,0 @@
-ID:  0 torch.Size([1, 1, 48, 22, 24]) torch.Size([1, 4, 48, 22, 24])
-ID:  1 torch.Size([1, 1, 48, 22, 24]) torch.Size([1, 4, 48, 22, 24])
-ID:  2 torch.Size([1, 1, 48, 22, 24]) torch.Size([1, 4, 48, 22, 24])
-ID:  3 torch.Size([1, 1, 48, 22, 24]) torch.Size([1, 4, 48, 22, 24])
-ID:  4 torch.Size([1, 1, 48, 22, 24]) torch.Size([1, 4, 48, 22, 24])
