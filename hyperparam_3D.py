@@ -466,14 +466,14 @@ if __name__ == '__main__':
         "method": "random",
         "metric": {"goal": "minimize", "name": "total_loss"},
         "parameters": 
-        {
-        'l4': {'values': [ [0.65, 0.65, 0.65, 5], [0.5, 0.5, 0.5, 5], [0.6, 0.6, 0.6, 5], [0.55, 0.55, 0.55, 5]]},
-        'l5': {'values': [ [1e-2, 1e-2, 1e-3, 9e-2], [9e-2, 9e-2, 9e-3, 9e-2], [5e-2, 5e-2, 5e-3, 9e-2]]},
+        {    
+        'lr': {'values': [7.5e-4, 1e-4, 2.5e-4,5e-4, 1e-3, 5e-3]},
         'w0': {'values': [25, 30, 20, 35]},
-        'lr': {'values': [7.5e-4, 1e-4, 2.5e-4,5e-4]},
-        'l1': {'values': [ 1.75, 2, 2.25, 2.5]},
-        'l3': {'values': [0.65, 0.7, 0.6, 0.5,0.55,0.75]},
-        'epochs': {'values': [2, 3, 4]}
+        'l1': {'values': [ 1.5, 2, 2.5, 2.75, 3, 3.25, 3.5]},
+        'l3': {'values': [0.5, 0.75, 1.0, 1.5,2, 2.75, 3, 3.5]},
+        'l4': {'values': [ [5e-4, 5e-4, 5e-4, 5e-4], [5e-3, 5e-3, 5e-3, 5e-3], [5e-2, 5e-2, 5e-2, 5e-2], [0.55, 0.55, 0.55, 5]]},
+        'l5': {'values': [ [1e-3, 1e-3, 1e-3, 9e-3], [9e-1, 9e-1, 9e-1, 9e-1], [5e-2, 5e-2, 5e-3, 9e-2], [5e-4, 5e-4, 5e-4, 9e-4]]},
+        'epochs': {'values': [500, 750, 1000, 1250, 1500, 2000]}
         
         # 'lr': {'values': [1e-4, 2.5e-4, 5e-4, 1e-3]},
         # 'l1': {'values': [0.5, 0.75, 1.25, 2, 2.5, 3, 3.5]},
@@ -482,7 +482,7 @@ if __name__ == '__main__':
         # 'l3': {'values': [0.5, 0.65, 0.7, 0.8, 0.85]},
         # 'w0': {'values': [20, 25, 30, 35]},
         # 'epochs': {'values': [1200, 1500, 1800]}
-        } #refer documentation to define based on a distribution
+        } #refer documentation to define these values based on a distribution
 
     }
     # sweep_config = wandb.sweep_config
