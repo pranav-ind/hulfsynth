@@ -143,7 +143,7 @@ class ModelTrainer(nn.Module):
         self.chunk = (192*172*192)//64 #init chunk via config
         # self.patch_size = [48, 44, 48] #init patch_size via config
         # self.patch_size = [96, 86, 96] #init patch_size via config
-        self.patch_size = [48, 44, 48] #init patch_size via config
+        self.patch_size = [96, 88, 96] #init patch_size via config
         self.patch_size_lf = (self.patch_size[0], self.patch_size[1]//2, self.patch_size[2]//2) #init chunk_size via config
         self.num_patches_train = 80 #init num_patches_train via config
         self.hf_size = (192, 172, 192) #init hf_size via config
