@@ -145,7 +145,7 @@ class ModelTrainer(nn.Module):
         # self.patch_size = [96, 86, 96] #init patch_size via config
         self.patch_size = [48, 44, 48] #init patch_size via config
         self.patch_size_lf = (self.patch_size[0], self.patch_size[1]//2, self.patch_size[2]//2) #init chunk_size via config
-        self.num_patches_train = 80 #init num_patches_train via config
+        self.num_patches_train = 150 #init num_patches_train via config
         self.hf_size = (192, 172, 192) #init hf_size via config
         self.lf_size = (192, 88, 96) #init lf_size via config
 
@@ -291,7 +291,7 @@ class ModelTrainer(nn.Module):
         IO = torch.randn(hf_size, device = device) #index image
         #input 3D-coord grid
         
-        coord_input_loader = DataLoader(dataset=CoordsPatch(patch_size=patch_size, num_patches=num_patches_train, image=IO), batch_size=1, shuffle=False, num_workers=1, drop_last=True)
+        coord_input_loader = DataLoader(dataset=CoordsPatch(patch_size=patch_size, num_patches=num_patches_train, image=IO), batch_size=1, shuffle=True, num_workers=1, drop_last=True)
         # coord_input_loader_lf = DataLoader(dataset=CoordsPatch(patch_size=patch_size_lf, num_patches=num_patches_train, image=IO, is_low_res=False), batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
 
 
@@ -432,7 +432,7 @@ if __name__ == '__main__':
     config["lr"] = 7.5e-4
     config["l1"] = 2.75
     config["l2"] = 1e-4
-    config["l3"] = 2.75
+    config["l3"] = 1.0
     config["l4"] =  [5e-4, 5e-4, 5e-4, 5e-4]
     config["l5"] = [5e-3, 5e-3, 5e-3, 9e-3]
     config["w0"] = 25

@@ -1,0 +1,16 @@
+{"time":"2025-08-11T20:33:33.536217+05:30","level":"INFO","msg":"stream: starting","core version":"0.20.1","symlink path":"/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/wandb/run-20250811_203332-o8424sgc/logs/debug-core.log"}
+{"time":"2025-08-11T20:33:34.231925+05:30","level":"INFO","msg":"stream: created new stream","id":"o8424sgc"}
+{"time":"2025-08-11T20:33:34.231979+05:30","level":"INFO","msg":"stream: started","id":"o8424sgc"}
+{"time":"2025-08-11T20:33:34.232005+05:30","level":"INFO","msg":"writer: Do: started","stream_id":"o8424sgc"}
+{"time":"2025-08-11T20:33:34.232023+05:30","level":"INFO","msg":"sender: started","stream_id":"o8424sgc"}
+{"time":"2025-08-11T20:33:34.232176+05:30","level":"INFO","msg":"handler: started","stream_id":"o8424sgc"}
+{"time":"2025-08-11T20:33:34.635084+05:30","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-08-11T20:35:24.403536+05:30","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-08-11T20:35:24.404036+05:30","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-08-11T20:35:25.403511+05:30","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-08-11T20:35:25.409046+05:30","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading summary, console lines 97-99","runtime_seconds":0.005238375}],"total_operations":1}}
+{"time":"2025-08-11T20:35:25.797967+05:30","level":"INFO","msg":"stream: closing","id":"o8424sgc"}
+{"time":"2025-08-11T20:35:25.797992+05:30","level":"INFO","msg":"handler: closed","stream_id":"o8424sgc"}
+{"time":"2025-08-11T20:35:25.798156+05:30","level":"INFO","msg":"sender: closed","stream_id":"o8424sgc"}
+{"time":"2025-08-11T20:35:25.798153+05:30","level":"INFO","msg":"writer: Close: closed","stream_id":"o8424sgc"}
+{"time":"2025-08-11T20:35:25.798672+05:30","level":"INFO","msg":"stream: closed","id":"o8424sgc"}
