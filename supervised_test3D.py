@@ -233,7 +233,7 @@ class ModelTrainer(nn.Module):
 
             coord_chunk = patch_grid.reshape(-1,3).unsqueeze(0) #(1, *chunk,3)
             targ_prior_chunk = target_prior_patch.reshape(1, 4, chunk_size[0]*chunk_size[1]*chunk_size[2]).unsqueeze(-1)  #output : (1,4, *chunk, 1)
-            targ_hf_chunk = target_hf.reshape(-1, 1).unsqueeze(0)
+            targ_hf_chunk = target_hf_patch.reshape(-1, 1).unsqueeze(0)
             
             targ_chunk = target_patch.reshape(-1, 1).unsqueeze(0)
             targ_seg_chunk = target_seg_patch.reshape(1, 4, chunk_size_lf[0]*chunk_size_lf[1]*chunk_size_lf[2]).unsqueeze(-1) #output : (1,4, *chunk_lf, 1)
