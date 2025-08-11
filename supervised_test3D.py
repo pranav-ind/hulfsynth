@@ -200,11 +200,12 @@ class ModelTrainer(nn.Module):
 
         #supervised loss
         model_output_img_dice = torch.stack((model_output_img[:,:,3].reshape(chunk_size), model_output_img[:,:,0].reshape(chunk_size), model_output_img[:,:,1].reshape(chunk_size), model_output_img[:,:,2].reshape(chunk_size)), dim=0).unsqueeze(0)
-        final_img_chunk = model_output_img_dice[0,0] + model_output_img_dice[0,1] + model_output_img_dice[0,2] + model_output_img_dice[0,3]
+        final_img_chunk = model_output_img_dice[0,0] + model_output_img_dice[0,1] + model_output_img_dice[0,2] #+ model_output_img_dice[0,3]
         mse_hf = F.mse_loss(final_img_chunk.flatten(), targ_hf_chunk.flatten().float(), reduction='mean')
 
         #Total Loss
-        loss = L_mse + L_prior + L_seg  + TV_seg + TV_img + mse_hf #+ grad_reg_seg + grad_reg_img 
+        # loss = L_mse + L_prior + L_seg  + TV_seg + TV_img + mse_hf #+ grad_reg_seg + grad_reg_img 
+        loss = mse_hf
         # L_prior, L_seg, TV_seg, TV_img = None, None, None, None
         return loss, L_mse, L_prior, L_seg, TV_seg, TV_img, mse_hf
 
