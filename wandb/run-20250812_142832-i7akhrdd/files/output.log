@@ -1,0 +1,29 @@
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:35<00:00, 11.98s/it]
+Traceback (most recent call last):
+  File "/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/torchio_3D.py", line 118, in <module>
+    torch.onnx.export(model, coords_batched, model_saving_path)
+  File "/Users/pi58/opt/anaconda3/envs/mri_recon/lib/python3.10/site-packages/torch/onnx/utils.py", line 516, in export
+    _export(
+  File "/Users/pi58/opt/anaconda3/envs/mri_recon/lib/python3.10/site-packages/torch/onnx/utils.py", line 1692, in _export
+    onnx_proto_utils._export_file(proto, f, export_type, export_map)
+  File "/Users/pi58/opt/anaconda3/envs/mri_recon/lib/python3.10/site-packages/torch/onnx/_internal/onnx_proto_utils.py", line 175, in _export_file
+    with torch.serialization._open_file_like(f, "wb") as opened_file:
+  File "/Users/pi58/opt/anaconda3/envs/mri_recon/lib/python3.10/site-packages/torch/serialization.py", line 444, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+  File "/Users/pi58/opt/anaconda3/envs/mri_recon/lib/python3.10/site-packages/torch/serialization.py", line 425, in __init__
+    super().__init__(open(name, mode))
+FileNotFoundError: [Errno 2] No such file or directory: './wandb/saved_models/model_supervised.onnx'
+Traceback (most recent call last):
+  File "/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/torchio_3D.py", line 118, in <module>
+    torch.onnx.export(model, coords_batched, model_saving_path)
+  File "/Users/pi58/opt/anaconda3/envs/mri_recon/lib/python3.10/site-packages/torch/onnx/utils.py", line 516, in export
+    _export(
+  File "/Users/pi58/opt/anaconda3/envs/mri_recon/lib/python3.10/site-packages/torch/onnx/utils.py", line 1692, in _export
+    onnx_proto_utils._export_file(proto, f, export_type, export_map)
+  File "/Users/pi58/opt/anaconda3/envs/mri_recon/lib/python3.10/site-packages/torch/onnx/_internal/onnx_proto_utils.py", line 175, in _export_file
+    with torch.serialization._open_file_like(f, "wb") as opened_file:
+  File "/Users/pi58/opt/anaconda3/envs/mri_recon/lib/python3.10/site-packages/torch/serialization.py", line 444, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+  File "/Users/pi58/opt/anaconda3/envs/mri_recon/lib/python3.10/site-packages/torch/serialization.py", line 425, in __init__
+    super().__init__(open(name, mode))
+FileNotFoundError: [Errno 2] No such file or directory: './wandb/saved_models/model_supervised.onnx'
