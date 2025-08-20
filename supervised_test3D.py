@@ -223,6 +223,7 @@ class ModelTrainer(nn.Module):
         tv_seg_per_epoch = 0.0
         tv_img_per_epoch = 0.0
         print("executing train step fn....")
+        
         for idx, patch_grid in (enumerate(coord_input_loader)):
             # coord_chunk = patch_grid #shape(1, 48, 43, 48, 3)
             patch_grid = patch_grid.to(self.device)
