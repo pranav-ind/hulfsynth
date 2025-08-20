@@ -18,6 +18,18 @@ from torch import nn
 import lightning as pl
 
 
+from Models.models import Siren, Finer
+from Utils.utils import get_full_img, norm, get_device, dice_stack_helper, get_model, ClearCache
+from Data.load_data_3d import load_data, get_gt_seg
+from Utils.defaults import default_config
+from Utils.plotting_utils2 import plot_seg_results_paper, plot_final_results_paper, plot_hf_results_paper
+from Utils.plotting_utils import loss_plot, plot_image_metrics, plot_4_images
+from LFSynth.ContrastModulation import ContrastModulation
+from test3D import visualize_volume_slices
+import copy
+
+
+
 class ReLULayer(nn.Module):
     def __init__(self,
                  in_size: int,
@@ -56,15 +68,6 @@ class MLP(nn.Module):
 
 # gt_image.shape
 # temp = torch.rand(172, 192, 192, 1)
-from Models.models import Siren, Finer
-from Utils.utils import get_full_img, norm, get_device, dice_stack_helper, get_model, ClearCache
-from Data.load_data_3d import load_data, get_gt_seg
-from Utils.defaults import default_config
-from Utils.plotting_utils2 import plot_seg_results_paper, plot_final_results_paper, plot_hf_results_paper
-from Utils.plotting_utils import loss_plot, plot_image_metrics, plot_4_images
-from LFSynth.ContrastModulation import ContrastModulation
-from test3D import visualize_volume_slices
-import copy
 
 config = copy.deepcopy(default_config)
 config["in_features"] = 3
@@ -79,7 +82,7 @@ POINTS_PER_SAMPLE = 96*96*4
 class RandomPointsDataset(Dataset):
     def __init__(self, image: torch.Tensor, points_num: int = POINTS_PER_SAMPLE):
         super().__init__()
-        self.device = "mps"
+        self.device = get_device()
         self.points_num = points_num
         assert image.dtype == torch.float32
         self.image = image.to(self.device)  # (H, W, ..., C)
