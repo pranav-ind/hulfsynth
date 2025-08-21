@@ -247,7 +247,7 @@ inr_module = INRLightningModule(network=inr,
                                 eval_interval=100,
                                 visualization_intervals=[0, 100, 500, 1000, 5000, 10000],
                                 )
-trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS)
+trainer = pl.Trainer(gpus=[0], max_epochs=TRAINING_EPOCHS)
 
 s = datetime.now()
 print(f"Fitting time start point: {datetime.now()-s}s.")
