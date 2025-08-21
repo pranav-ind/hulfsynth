@@ -82,7 +82,7 @@ POINTS_PER_SAMPLE = 96*96*4
 class RandomPointsDataset(Dataset):
     def __init__(self, image: torch.Tensor, points_num: int = POINTS_PER_SAMPLE):
         super().__init__()
-        self.device = 'cpu' #get_device()
+        self.device = get_device()
         self.points_num = points_num
         assert image.dtype == torch.float32
         self.image = image.to(self.device)  # (H, W, ..., C)
