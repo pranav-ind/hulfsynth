@@ -117,7 +117,7 @@ dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False)
 
 
 
-'''
+
 
 # We will track visual results every few epochs and visualize them after training
 def plot_reconstructions(progress_ims: List[Tuple[int, torch.Tensor]], gt_im: torch.Tensor):
@@ -258,4 +258,3 @@ plt.imsave('./inr_pred.png', pred_img[:,:,95])
 
 fig = plot_scores([inr_module])
 fig.savefig('./psnr.png')
-'''
