@@ -74,7 +74,7 @@ config["in_features"] = 3
 hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
 gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
 gt_image = gt_image.to(torch.float32)
-
+print('gt_image loaded')
 
 
 POINTS_PER_SAMPLE = 96*96*4
@@ -82,7 +82,7 @@ POINTS_PER_SAMPLE = 96*96*4
 class RandomPointsDataset(Dataset):
     def __init__(self, image: torch.Tensor, points_num: int = POINTS_PER_SAMPLE):
         super().__init__()
-        self.device = get_device()
+        self.device = 'cpu' #get_device()
         self.points_num = points_num
         assert image.dtype == torch.float32
         self.image = image.to(self.device)  # (H, W, ..., C)
@@ -117,7 +117,7 @@ dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False)
 
 
 
-
+'''
 
 # We will track visual results every few epochs and visualize them after training
 def plot_reconstructions(progress_ims: List[Tuple[int, torch.Tensor]], gt_im: torch.Tensor):
@@ -258,3 +258,4 @@ plt.imsave('./inr_pred.png', pred_img[:,:,95])
 
 fig = plot_scores([inr_module])
 fig.savefig('./psnr.png')
+'''
