@@ -113,7 +113,7 @@ class RandomPointsDataset(Dataset):
 
 dataset = RandomPointsDataset(gt_image, points_num=POINTS_PER_SAMPLE)
 # We set a batch_size of 1 since our dataloader is already returning a batch of points.
-dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=True)
+dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False)
 
 
 
