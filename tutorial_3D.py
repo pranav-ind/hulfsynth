@@ -199,6 +199,7 @@ class INRLightningModule(pl.LightningModule):
         values = values.view(-1, values.shape[-1])
         outputs = self.forward(coords)
         loss = nn.functional.mse_loss(outputs, values)
+        print(loss.item())
         return loss
 
     def on_train_epoch_end(self):
@@ -223,8 +224,8 @@ class INRLightningModule(pl.LightningModule):
         return predictions
 
 #initialize network
-HIDDEN_SIZE = 512
-NUM_LAYERS = 9
+HIDDEN_SIZE = 128
+NUM_LAYERS = 3
 
 inr = MLP(dataset.coord_size,
           dataset.value_size,
@@ -237,7 +238,7 @@ inr = MLP(dataset.coord_size,
 
 # Let's initialize our lightning module
 LEARNING_RATE = 1e-3
-TRAINING_EPOCHS = 50
+TRAINING_EPOCHS = 5
 
 inr_module = INRLightningModule(network=inr, 
                                 lr=LEARNING_RATE,
