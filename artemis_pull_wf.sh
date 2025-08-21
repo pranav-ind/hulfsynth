@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ssh artemis
+# ssh artemis
 source ~/.bashrc
 echo "sourcing bash..."
 
