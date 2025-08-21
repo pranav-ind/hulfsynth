@@ -248,15 +248,15 @@ inr_module = INRLightningModule(network=inr,
                                 visualization_intervals=[0, 100, 500, 1000, 5000, 10000],
                                 )
 trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS)
-'''
+
 s = datetime.now()
+print(f"Fitting time start point: {datetime.now()-s}s.")
 trainer.fit(inr_module, train_dataloaders=dataloader)
 print(f"Fitting time: {datetime.now()-s}s.")
 
-pred_img = inr_module.sample_at_resolution(gt_image.shape[:-1])
-plt.imshow(pred_img[:,:,95], cmap='gray')
-plt.imsave('./inr_pred.png', pred_img[:,:,95])
+# pred_img = inr_module.sample_at_resolution(gt_image.shape[:-1])
+# plt.imshow(pred_img[:,:,95], cmap='gray')
+# plt.imsave('./inr_pred.png', pred_img[:,:,95])
 
-fig = plot_scores([inr_module])
-fig.savefig('./psnr.png')
-'''
+# fig = plot_scores([inr_module])
+# fig.savefig('./psnr.png')
