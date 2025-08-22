@@ -314,6 +314,8 @@ siren_module = INRLightningModule(network=siren_inr,
                                   lr=LEARNING_RATE,
                                   name='SIREN',
                                  )
+
+TRAINING_EPOCHS = 2500                                 
 trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS)
 s = datetime.now()
 trainer.fit(siren_module, train_dataloaders=dataloader)
