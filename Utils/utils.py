@@ -33,7 +33,7 @@ def get_model(config):
 def get_device():
     
     if(torch.cuda.is_available()):
-        device = torch.device("cuda")
+        device = torch.device("cuda")[0]
     elif(torch.backends.mps.is_available()):
         device = torch.device("mps")
     else:
