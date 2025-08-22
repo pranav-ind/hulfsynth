@@ -321,7 +321,7 @@ print(f"Fitting time: {datetime.now()-s}s.")
 
 
 
-# pred_img_inr = inr_module.sample_at_resolution(gt_image.shape[:-1])
+pred_img_inr = inr_module.sample_at_resolution(gt_image.shape[:-1])
 pred_img_siren = siren_module.sample_at_resolution(gt_image.shape[:-1])
 
 
