@@ -238,7 +238,7 @@ inr = MLP(dataset.coord_size,
 
 # Let's initialize our lightning module
 LEARNING_RATE = 5e-4
-TRAINING_EPOCHS = 5
+TRAINING_EPOCHS = 10000
 
 inr_module = INRLightningModule(network=inr, 
                                 lr=LEARNING_RATE,
