@@ -239,7 +239,7 @@ inr = MLP(dataset.coord_size,
 # Let's initialize our lightning module
 LEARNING_RATE = 5e-4
 TRAINING_EPOCHS = 5
-'''
+
 inr_module = INRLightningModule(network=inr, 
                                 lr=LEARNING_RATE,
                                 gt_im=gt_image,
@@ -253,7 +253,7 @@ trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS) #gpus=2, num_nodes=2, accelerat
 s = datetime.now()
 trainer.fit(inr_module, train_dataloaders=dataloader)
 print(f"Fitting time: {datetime.now()-s}s.")
-'''
+
 
 
 SIREN_FACTOR = 30.0
@@ -325,10 +325,10 @@ print(f"Fitting time: {datetime.now()-s}s.")
 pred_img_siren = siren_module.sample_at_resolution(gt_image.shape[:-1])
 
 
-# plt.imshow(pred_img_inr[:,:,95], cmap='gray')
-# plt.imsave('./pred_img_inr.png', pred_img_inr[:,:,95])
+plt.imshow(pred_img_inr[:,:,95], cmap='gray')
+plt.imsave('./pred_img_inr.png', pred_img_inr[:,:,95])
 plt.imshow(pred_img_siren[:,:,95], cmap='gray')
 plt.imsave('./pred_img_siren.png', pred_img_siren[:,:,95])
 
-fig = plot_scores([siren_module])
+fig = plot_scores([inr_module, siren_module])
 fig.savefig('./psnr.png')
