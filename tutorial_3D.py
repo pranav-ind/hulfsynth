@@ -224,8 +224,8 @@ class INRLightningModule(pl.LightningModule):
         return predictions
 
 #initialize network
-HIDDEN_SIZE = 512
-NUM_LAYERS = 5
+HIDDEN_SIZE = 128
+NUM_LAYERS = 3
 
 inr = MLP(dataset.coord_size,
           dataset.value_size,
