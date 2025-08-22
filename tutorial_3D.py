@@ -224,8 +224,8 @@ class INRLightningModule(pl.LightningModule):
         return predictions
 
 #initialize network
-HIDDEN_SIZE = 256
-NUM_LAYERS = 7
+HIDDEN_SIZE = 512
+NUM_LAYERS = 5
 
 inr = MLP(dataset.coord_size,
           dataset.value_size,
@@ -238,7 +238,7 @@ inr = MLP(dataset.coord_size,
 
 # Let's initialize our lightning module
 LEARNING_RATE = 5e-4
-TRAINING_EPOCHS = 7500
+TRAINING_EPOCHS = 5
 
 inr_module = INRLightningModule(network=inr, 
                                 lr=LEARNING_RATE,
@@ -254,9 +254,81 @@ s = datetime.now()
 trainer.fit(inr_module, train_dataloaders=dataloader)
 print(f"Fitting time: {datetime.now()-s}s.")
 
-pred_img = inr_module.sample_at_resolution(gt_image.shape[:-1])
-plt.imshow(pred_img[:,:,95], cmap='gray')
-plt.imsave('./inr_pred.png', pred_img[:,:,95])
 
-fig = plot_scores([inr_module])
+
+SIREN_FACTOR = 30.0
+
+class SineLayer(nn.Module):
+    """
+        Implicit Neural Representations with Periodic Activation Functions
+        Implementation based on https://github.com/vsitzmann/siren?tab=readme-ov-file
+    """
+    def __init__(self, in_size, out_size, siren_factor=30., **kwargs):
+        super().__init__()
+        # See paper sec. 3.2, final paragraph, and supplement Sec. 1.5 for discussion of factor 30
+        self.siren_factor = siren_factor
+        self.linear = nn.Linear(in_size, out_size, bias=True)
+
+    def forward(self, x):
+        x = self.linear(x)
+        x = torch.sin(self.siren_factor * x)
+        return x
+
+
+
+import math
+
+def initialize_siren_weights(network: MLP, omega: float):
+    """ See SIREN paper supplement Sec. 1.5 for discussion """
+    old_weights = network.layers[1].linear.weight.clone()
+    with torch.no_grad():
+        # First layer initialization
+        num_input = network.layers[0].linear.weight.size(-1)
+        network.layers[0].linear.weight.uniform_(-1 / num_input, 1 / num_input)
+        # Subsequent layer initialization uses based on omega parameter
+        for layer in network.layers[1:-1]:
+            num_input = layer.linear.weight.size(-1)
+            layer.linear.weight.uniform_(-math.sqrt(6 / num_input) / omega, math.sqrt(6 / num_input) / omega)
+        # Final linear layer also uses initialization based on omega parameter
+        num_input = network.layers[-1].weight.size(-1)
+        network.layers[-1].weight.uniform_(-math.sqrt(6 / num_input) / omega, math.sqrt(6 / num_input) / omega)
+        
+    # Verify that weights did indeed change
+    new_weights = network.layers[1].linear.weight
+    assert (old_weights - new_weights).abs().sum() > 0.0
+
+
+# We use the same MLP class as before, but give it our new SIREN layers
+siren_inr = MLP(dataset.coord_size,
+                dataset.value_size,
+                hidden_size=HIDDEN_SIZE,
+                num_layers=NUM_LAYERS,
+                layer_class=SineLayer, 
+                siren_factor=SIREN_FACTOR,
+                )
+# Re-initialize the weights and make sure they are different
+initialize_siren_weights(siren_inr, SIREN_FACTOR)
+
+siren_module = INRLightningModule(network=siren_inr,
+                                  gt_im=gt_image,
+                                  lr=LEARNING_RATE,
+                                  name='SIREN',
+                                 )
+trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS)
+s = datetime.now()
+trainer.fit(siren_module, train_dataloaders=dataloader)
+print(f"Fitting time: {datetime.now()-s}s.")
+
+
+
+pred_img_inr = inr_module.sample_at_resolution(gt_image.shape[:-1])
+pred_img_siren = siren_module.sample_at_resolution(gt_image.shape[:-1])
+
+
+plt.imshow(pred_img_inr[:,:,95], cmap='gray')
+plt.imsave('./pred_img_inr.png', pred_img_inr[:,:,95])
+plt.imshow(pred_img_siren[:,:,95], cmap='gray')
+plt.imsave('./pred_img_siren.png', pred_img_siren[:,:,95])
+
+fig = plot_scores([inr_module, siren_module])
 fig.savefig('./psnr.png')
