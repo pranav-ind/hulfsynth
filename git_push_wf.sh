@@ -14,3 +14,8 @@ echo "Pushing to origin main..."
 git push origin main
 
 echo "Git workflow complete."
+
+ssh -t artemis 'cd /its/home/pi58/projects/hulfsynth/; git pull origin main; bash -l'
+echo "logging into artemis..."
+
+
