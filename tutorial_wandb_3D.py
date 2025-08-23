@@ -28,6 +28,8 @@ from LFSynth.ContrastModulation import ContrastModulation
 from test3D import visualize_volume_slices
 import copy
 
+import wandb
+from lightning.pytorch.loggers import WandbLogger
 
 
 class ReLULayer(nn.Module):
@@ -164,8 +166,6 @@ def plot_scores(models: List['INRModule']):
 
 
 
-
-
 class INRLightningModule(pl.LightningModule):
     def __init__(self,
                  network: MLP,
@@ -199,18 +199,38 @@ class INRLightningModule(pl.LightningModule):
         values = values.view(-1, values.shape[-1])
         outputs = self.forward(coords)
         loss = nn.functional.mse_loss(outputs, values)
+        '''
+        wandb.log({"total_loss": loss.item(),
+            "mse": losses["mse"][-1], 
+            "prior": losses["prior"][-1], 
+            "seg": losses["seg"][-1], 
+            "tv_seg": losses["TV_seg"][-1], 
+            "tv_img": losses["TV_img"][-1], 
+            })
+        '''
         print(loss.item())
+        pred_im = self.sample_at_resolution(self.gt_im.shape[:-1])
+        # print("pred_img: ", pred_im.shape)
+        wandb_logger.log_image(key="pred", images=[norm(pred_im[:,:,90]).unsqueeze(0), norm(pred_im[:,:,95]).unsqueeze(0)], caption=["slice: 90", "slice: 95"])
+        pred_im = pred_im.reshape(self.gt_im.shape)
+        psnr_value = psnr(pred_im, self.gt_im.to(pred_im.device)).cpu().item()
+        wandb.log({"total_loss": loss.item(), "psnr": psnr_value})
+        # self.log("total_loss", loss.item())
+        # self.loggt("psnr", psnr_value)
         return loss
 
     def on_train_epoch_end(self):
         """ At each visualization interval, reconstruct the image using our INR """
-        if (self.current_epoch + 1) % self.eval_interval == 0 or self.current_epoch == 0:
-            pred_im = self.sample_at_resolution(self.gt_im.shape[:-1])
-            pred_im = pred_im.reshape(self.gt_im.shape)
-            psnr_value = psnr(pred_im, self.gt_im.to(pred_im.device)).cpu().item()
-            self.scores.append((self.current_epoch + 1, psnr_value))  # Log PSNR
-            if self.current_epoch + 1 in self.visualization_intervals:
-                self.progress_ims.append((self.current_epoch + 1, pred_im.cpu(), psnr_value))
+
+        # if (self.current_epoch + 1) % self.eval_interval == 0 or self.current_epoch == 0:
+        # pred_im = self.sample_at_resolution(self.gt_im.shape[:-1])
+        # pred_im = pred_im.reshape(self.gt_im.shape)
+        # psnr_value = psnr(pred_im, self.gt_im.to(pred_im.device)).cpu().item()
+        # wandb.log({"psnr": psnr_value})
+        # self.scores.append((self.current_epoch + 1, psnr_value))  # Log PSNR
+        # if self.current_epoch + 1 in self.visualization_intervals:
+        #     self.progress_ims.append((self.current_epoch + 1, pred_im.cpu(), psnr_value))
+        pass
 
     @torch.no_grad()
     def sample_at_resolution(self, resolution: Tuple[int, ...]):
@@ -224,8 +244,10 @@ class INRLightningModule(pl.LightningModule):
         return predictions
 
 #initialize network
-HIDDEN_SIZE = 256
-NUM_LAYERS = 5
+HIDDEN_SIZE = 32 #working well; 256/5/3000
+NUM_LAYERS = 2
+TRAINING_EPOCHS = 5
+LEARNING_RATE = 5e-4
 
 inr = MLP(dataset.coord_size,
           dataset.value_size,
@@ -234,29 +256,7 @@ inr = MLP(dataset.coord_size,
           layer_class=ReLULayer, 
          )
 
-
-
-# Let's initialize our lightning module
-LEARNING_RATE = 5e-4
-TRAINING_EPOCHS = 3000
-
-inr_module = INRLightningModule(network=inr, 
-                                lr=LEARNING_RATE,
-                                gt_im=gt_image,
-                                name='ReLU',
-                                eval_interval=100,
-                                visualization_intervals=[0, 100, 500, 1000, 5000, 10000],
-                                )
-trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS) #gpus=2, num_nodes=2, accelerator='ddp', 
-
-
-s = datetime.now()
-trainer.fit(inr_module, train_dataloaders=dataloader)
-print(f"Fitting time: {datetime.now()-s}s.")
-
-
-
-SIREN_FACTOR = 30.0 #w0
+SIREN_FACTOR = 30.0 
 
 class SineLayer(nn.Module):
     """
@@ -297,40 +297,57 @@ def initialize_siren_weights(network: MLP, omega: float):
     new_weights = network.layers[1].linear.weight
     assert (old_weights - new_weights).abs().sum() > 0.0
 
-
-# We use the same MLP class as before, but give it our new SIREN layers
-siren_inr = MLP(dataset.coord_size,
-                dataset.value_size,
-                hidden_size=HIDDEN_SIZE,
-                num_layers=NUM_LAYERS,
-                layer_class=SineLayer, 
-                siren_factor=SIREN_FACTOR,
-                )
-# Re-initialize the weights and make sure they are different
-initialize_siren_weights(siren_inr, SIREN_FACTOR)
-
-siren_module = INRLightningModule(network=siren_inr,
-                                  gt_im=gt_image,
-                                  lr=LEARNING_RATE,
-                                  name='SIREN',
-                                 )
+def wandb_setup():
+    wandb.login()
+    project_ = "hulfsynth_ulfenc"
+    # run_name = "run_" + str(run_id)
+    run = wandb.init(project=project_)
 
 
-trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS)
-s = datetime.now()
-trainer.fit(siren_module, train_dataloaders=dataloader)
-print(f"Fitting time: {datetime.now()-s}s.")
+if __name__ == '__main__':
+    wandb_setup()
+    wandb_logger = WandbLogger(project="hulfsynth_ulfenc")
+
+
+    siren_inr = MLP(dataset.coord_size,
+                    dataset.value_size,
+                    hidden_size=HIDDEN_SIZE,
+                    num_layers=NUM_LAYERS,
+                    layer_class=SineLayer, 
+                    siren_factor=SIREN_FACTOR,
+                    )
+    # Re-initialize the weights and make sure they are different
+    initialize_siren_weights(siren_inr, SIREN_FACTOR)
+
+    siren_module = INRLightningModule(network=siren_inr,
+                                    gt_im=gt_image,
+                                    lr=LEARNING_RATE,
+                                    name='SIREN',
+                                    )
 
 
 
-pred_img_inr = inr_module.sample_at_resolution(gt_image.shape[:-1])
-pred_img_siren = siren_module.sample_at_resolution(gt_image.shape[:-1])
+
+    trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger)
+    
+    wandb_logger.watch(siren_module, log="all")
 
 
-plt.imshow(pred_img_inr[:,:,95], cmap='gray')
-plt.imsave('./results/pred_img_inr.png', pred_img_inr[:,:,95])
-plt.imshow(pred_img_siren[:,:,95], cmap='gray')
-plt.imsave('./results/pred_img_siren.png', pred_img_siren[:,:,95])
 
-fig = plot_scores([inr_module, siren_module])
-fig.savefig('./results/psnr.png')
+    s = datetime.now()
+    trainer.fit(siren_module, train_dataloaders=dataloader)
+    print(f"Fitting time: {datetime.now()-s}s.")
+
+
+
+    # pred_img_inr = inr_module.sample_at_resolution(gt_image.shape[:-1])
+    pred_img_siren = siren_module.sample_at_resolution(gt_image.shape[:-1])
+
+
+    # plt.imshow(pred_img_inr[:,:,95], cmap='gray')
+    # plt.imsave('./results/pred_img_inr.png', pred_img_inr[:,:,95])
+    plt.imshow(pred_img_siren[:,:,95], cmap='gray')
+    plt.imsave('./results/pred_img_siren.png', pred_img_siren[:,:,95])
+
+    fig = plot_scores([siren_module])
+    fig.savefig('./results/psnr.png')
