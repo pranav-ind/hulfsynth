@@ -367,8 +367,8 @@ if __name__ == '__main__':
     # plt.imshow(pred_img_inr[:,:,95], cmap='gray')
     # plt.imsave('./results/pred_img_inr.png', pred_img_inr[:,:,95])
     plt.imshow(pred_img_siren[:,:,95], cmap='gray')
-    # plt.imsave('./results/pred_img_siren.png', pred_img_siren[:,:,95])
+    plt.imsave('./results/pred_img_siren.png', pred_img_siren[:,:,95])
 
     fig = plot_scores([siren_module])
-    # fig.savefig('./results/psnr.png')
+    fig.savefig('./results/psnr.png')
     
