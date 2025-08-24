@@ -82,12 +82,16 @@ class RandomPointsDataset(Dataset):
         assert lf_image.dtype == torch.float32
         self.image = image.to(self.device)  # (H, W, ..., C)
         self.lf_image = lf_image.to(self.device)  # (H, W, ..., C)
-        self.dim_sizes = self.image.shape[:-1]  # Size of each spatial dimension
+        # self.dim_sizes = self.image.shape[:-1]  # Size of each spatial dimension
+        self.dim_sizes = self.lf_image.shape[:-1]  # Size of each spatial dimension
+        
 
         # To help us define the input/output sizes of our network later
         # we store the size of our input coordinates and output values
         self.coord_size = len(self.image.shape[:-1])  # Number of spatial dimensions
-        self.value_size = self.image.shape[-1]  # Channel size
+        self.value_size = self.lf_image.shape[-1]  # Channel size
+        # self.value_size = self.lf_image.shape[-1]  # Channel size
+
 
     def __len__(self):
         return 1
@@ -95,27 +99,19 @@ class RandomPointsDataset(Dataset):
     def __getitem__(self, idx: int):
         # Create random sample of pixel indices
         point_indices = [torch.randint(0, i, (self.points_num,), device=self.device) for i in self.dim_sizes]
-        # point_indices = [i.to(torch.int32) for i in point_indices]
-        # point_indices = [i.to('cpu') for i in point_indices]
-        # print(point_indices[0].dtype, point_indices[0].device)
-        
-        point_indices_lf = [(F.interpolate(i.unsqueeze(0).unsqueeze(0).to(torch.float32), scale_factor=0.25)).squeeze(0).squeeze(0) for i in point_indices]
-        point_indices = [i.to(torch.int32).to(self.device) for i in point_indices]
-        point_indices_lf = [i.to(torch.int32).to(self.device) for i in point_indices_lf]
-
-        # print(point_indices[0].device, point_indices_lf[0].shape)
+        # print(point_indices[0].shape)
         # Retrieve image values from selected indices
-        point_values = self.image[tuple(point_indices)]
-        point_values_lf = self.lf_image[tuple(point_indices_lf)]
-        print(point_values.shape, point_values_lf.shape)
-        
+        point_values = self.lf_image[tuple(point_indices)]
+        # print(point_values.shape)
+        point_values = F.interpolate(point_values.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0)
+        # print(point_values.shape)
         # Convert point indices into normalized [-1.0, 1.0] coordinates
         point_coords = torch.stack(point_indices, dim=-1)
         spatial_dims = torch.tensor(self.dim_sizes, device=self.device)
         point_coords_norm = point_coords / (spatial_dims / 2) - 1
 
         # The subject index is also returned in case the user wants to use subject-wise learned latents
-        return point_coords_norm, point_values, point_values_lf
+        return point_coords_norm, point_values
 
 
 
@@ -194,18 +190,19 @@ class INRLightningModule(pl.LightningModule):
         return self.network(coords)
 
     def training_step(self, batch, batch_idx):
-        coords, values, values_lf = batch
+        coords, values = batch
         coords = coords.view(-1, coords.shape[-1])
         values = values.view(-1, values.shape[-1])
-        values_lf = values_lf.view(-1, values_lf.shape[-1])
+        # values_lf = values_lf.view(-1, values_lf.shape[-1])
         # print("true_values: ",coords.shape, values.shape, values_lf.shape)
         
         outputs = self.forward(coords)
         outputs_lf = F.interpolate(outputs.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0)
-        loss1 = nn.functional.mse_loss(outputs, values)
-        loss2 = nn.functional.mse_loss(outputs_lf, values_lf)
-        print("loss1: ",loss1.item(), "loss2: ", loss2.item())
-        loss = loss1 + loss2
+        loss = nn.functional.mse_loss(outputs_lf, values)
+        # loss1 = nn.functional.mse_loss(outputs, values)
+        # loss2 = nn.functional.mse_loss(outputs_lf, values_lf)
+        # print("loss1: ",loss1.item(), "loss2: ", loss2.item())
+        # loss = loss1 + loss2
         '''
         wandb.log({"total_loss": loss.item(),
             "mse": losses["mse"][-1], 
@@ -221,7 +218,8 @@ class INRLightningModule(pl.LightningModule):
         wandb_logger.log_image(key="pred", images=[norm(pred_im[:,:,90]).unsqueeze(0), norm(pred_im[:,:,95]).unsqueeze(0)], caption=["slice: 90", "slice: 95"])
         pred_im = pred_im.reshape(self.gt_im.shape)
         psnr_value = psnr(pred_im, self.gt_im.to(pred_im.device)).cpu().item()
-        wandb.log({"total_loss": loss.item(), "psnr": psnr_value, "hf_loss": loss1.item(), "ulf_loss": loss2.item()})
+        # wandb.log({"total_loss": loss.item(), "psnr": psnr_value, "hf_loss": loss1.item(), "ulf_loss": loss2.item()})
+        wandb.log({"total_loss": loss.item(), "psnr": psnr_value})
         # self.log("total_loss", loss.item())
         # self.loggt("psnr", psnr_value)
         return loss
@@ -326,11 +324,10 @@ if __name__ == '__main__':
 
     dataset = RandomPointsDataset(gt_image, lf_gt, points_num=POINTS_PER_SAMPLE)
     dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
-    temp = next(iter(dataloader))
-    print(temp[0].shape, temp[1].shape, temp[2].shape)
+    
     # lf_dataset = RandomPointsDataset(lf_gt, points_num=lf_points_per_sample)
     # lf_dataloader = DataLoader(lf_dataset, batch_size=1, num_workers=0, pin_memory=False)
-    '''
+    
     SIREN_FACTOR = 30.0 
     siren_inr = MLP(dataset.coord_size,
                     dataset.value_size,
@@ -370,8 +367,8 @@ if __name__ == '__main__':
     # plt.imshow(pred_img_inr[:,:,95], cmap='gray')
     # plt.imsave('./results/pred_img_inr.png', pred_img_inr[:,:,95])
     plt.imshow(pred_img_siren[:,:,95], cmap='gray')
-    plt.imsave('./results/pred_img_siren.png', pred_img_siren[:,:,95])
+    # plt.imsave('./results/pred_img_siren.png', pred_img_siren[:,:,95])
 
     fig = plot_scores([siren_module])
-    fig.savefig('./results/psnr.png')
-    '''
+    # fig.savefig('./results/psnr.png')
+    
