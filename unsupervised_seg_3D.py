@@ -18,6 +18,9 @@ from datetime import datetime
 
 from torch import nn
 import lightning as pl
+import monai
+from monai.losses import DiceLoss, DiceCELoss, SoftclDiceLoss, DiceFocalLoss, NACLLoss
+
 
 
 from Models.models import Siren, Finer
@@ -48,7 +51,6 @@ class ReLULayer(nn.Module):
         x = torch.relu(x)
         return x
 
-
 class MLP(nn.Module):
     def __init__(self,
                  in_size: int,
@@ -62,19 +64,30 @@ class MLP(nn.Module):
         a = [layer_class(in_size, hidden_size, **kwargs)]
         for i in range(num_layers - 1):
             a.append(layer_class(hidden_size, hidden_size, **kwargs))
-        a.append(nn.Linear(hidden_size, out_size))
+        
+        # a.append(nn.Linear(hidden_size, 1)) #actual image
+        a.append(nn.Linear(hidden_size, out_size)) #segmentations+image
         self.layers = nn.ModuleList(a)        
+        self.sigmoid = nn.Sigmoid()
+        self.relu = nn.ReLU()
+        self.softmax = nn.Softmax(dim=-1)
+        
 
     def forward(self, x: torch.Tensor):
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
             x = layer(x)
-        return x
+        output_image_pre = x[:,0] #output image before applying activation function
+        output_seg_pre = x[:,1:] #output seg before applying activation function
+        output_image = self.relu(output_image_pre)
+        output_seg = self.softmax(output_seg_pre)
+        return output_image, output_seg
+
 
 
 
 
 class RandomPointsDataset(Dataset):
-    def __init__(self, image: torch.Tensor, lf_image:torch.Tensor, points_num: int = POINTS_PER_SAMPLE):
+    def __init__(self, image: torch.Tensor, lf_image:torch.Tensor, lf_gt_seg_dice:torch.Tensor, points_num: int = POINTS_PER_SAMPLE):
         super().__init__()
         self.device = get_device()
         self.points_num = points_num
@@ -82,6 +95,7 @@ class RandomPointsDataset(Dataset):
         assert lf_image.dtype == torch.float32
         self.image = image.to(self.device)  # (H, W, ..., C)
         self.lf_image = lf_image.to(self.device)  # (H, W, ..., C)
+        self.lf_gt_seg_dice = lf_gt_seg_dice.permute(1,2,3,4,0).to(self.device) #(tissues, H,W,D, C)
         # self.dim_sizes = self.image.shape[:-1]  # Size of each spatial dimension
         self.dim_sizes = self.lf_image.shape[:-1]  # Size of each spatial dimension
         
@@ -92,26 +106,33 @@ class RandomPointsDataset(Dataset):
         self.value_size = self.lf_image.shape[-1]  # Channel size
         # self.value_size = self.lf_image.shape[-1]  # Channel size
 
-
     def __len__(self):
         return 1
 
+
     def __getitem__(self, idx: int):
         # Create random sample of pixel indices
+        
         point_indices = [torch.randint(0, i, (self.points_num,), device=self.device) for i in self.dim_sizes]
         # print(point_indices[0].shape)
         # Retrieve image values from selected indices
         point_values = self.lf_image[tuple(point_indices)]
-        # print(point_values.shape)
-        point_values = F.interpolate(point_values.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0)
-        # print(point_values.shape)
+
+        point_values_seg = [self.lf_gt_seg_dice[i][tuple(point_indices)] for i in range(self.lf_gt_seg_dice.shape[0])]
+        point_values_seg = torch.stack(point_values_seg,axis = 0)
+        # print(point_values.shape, point_values_seg.shape)
+        point_values = F.interpolate(point_values.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0) #downsampling lf_gt
+        point_values_seg = [F.interpolate(point_values_seg[i].unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0) for i in range(self.lf_gt_seg_dice.shape[0])] #downsampling lf_gt_seg
+        point_values_seg = torch.stack(point_values_seg,axis = 0)
+        # print(point_values.shape, point_values_seg.shape)
+
         # Convert point indices into normalized [-1.0, 1.0] coordinates
         point_coords = torch.stack(point_indices, dim=-1)
         spatial_dims = torch.tensor(self.dim_sizes, device=self.device)
         point_coords_norm = point_coords / (spatial_dims / 2) - 1
 
         # The subject index is also returned in case the user wants to use subject-wise learned latents
-        return point_coords_norm, point_values
+        return point_coords_norm, point_values, point_values_seg
 
 
 
@@ -182,6 +203,7 @@ class INRLightningModule(pl.LightningModule):
         self.visualization_intervals = visualization_intervals
         self.progress_ims = []
         self.scores = []
+        self.dice = DiceCELoss(include_background=True,squared_pred = True, reduction='mean', jaccard=False)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.network.parameters(), lr=self.lr)
@@ -190,18 +212,27 @@ class INRLightningModule(pl.LightningModule):
         return self.network(coords)
 
     def training_step(self, batch, batch_idx):
-        coords, values = batch
+        coords, values, values_seg = batch
         coords = coords.view(-1, coords.shape[-1])
         values = values.view(-1, values.shape[-1])
+        # values_seg = values_seg.view(-1, values_seg.shape[-1])
         # values_lf = values_lf.view(-1, values_lf.shape[-1])
-        # print("true_values: ",coords.shape, values.shape, values_lf.shape)
+        print("true_values: ",coords.shape, values.shape, values_seg.shape)
         
-        outputs = self.forward(coords)
-        outputs_lf = F.interpolate(outputs.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0)
-        loss = nn.functional.mse_loss(outputs_lf, values)
-        # loss1 = nn.functional.mse_loss(outputs, values)
-        # loss2 = nn.functional.mse_loss(outputs_lf, values_lf)
-        # print("loss1: ",loss1.item(), "loss2: ", loss2.item())
+        output_image, output_seg = self.forward(coords)
+        print("pred: ", output_image.shape, output_seg.shape)
+        outputs_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0)
+        
+        pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0).squeeze(0)).reshape(48,48,4) for i in range(output_seg.shape[-1])] #downsampling lf_gt_seg
+        pred_seg = torch.stack(pred_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
+        values_seg = [values_seg[:,i].reshape(48,48,4) for i in range(values_seg[0].shape[0])]
+        values_seg = torch.stack(values_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
+        # print("seg: ", pred_seg.shape, values_seg.shape)
+        dice_loss = self.dice(pred_seg, values_seg)
+        mse_loss = nn.functional.mse_loss(outputs_lf, values) * 10 
+
+        loss = dice_loss + mse_loss
+        print("loss: ", loss.item(), dice_loss.item(), mse_loss.item())
         # loss = loss1 + loss2
         '''
         wandb.log({"total_loss": loss.item(),
@@ -213,13 +244,13 @@ class INRLightningModule(pl.LightningModule):
             })
         '''
         print(loss.item())
-        pred_im = self.sample_at_resolution(self.gt_im.shape[:-1])
+        pred_im  = self.sample_at_resolution(self.gt_im.shape[:-1])
         # print("pred_img: ", pred_im.shape)
         wandb_logger.log_image(key="pred", images=[norm(pred_im[:,:,90]).unsqueeze(0), norm(pred_im[:,:,95]).unsqueeze(0)], caption=["slice: 90", "slice: 95"])
         pred_im = pred_im.reshape(self.gt_im.shape)
         psnr_value = psnr(pred_im, self.gt_im.to(pred_im.device)).cpu().item()
         # wandb.log({"total_loss": loss.item(), "psnr": psnr_value, "hf_loss": loss1.item(), "ulf_loss": loss2.item()})
-        wandb.log({"total_loss": loss.item(), "psnr": psnr_value})
+        wandb.log({"total_loss": loss.item(), "psnr": psnr_value, "mse": mse_loss.item(), "seg": dice_loss.item() })
         # self.log("total_loss", loss.item())
         # self.loggt("psnr", psnr_value)
         return loss
@@ -239,13 +270,15 @@ class INRLightningModule(pl.LightningModule):
 
     @torch.no_grad()
     def sample_at_resolution(self, resolution: Tuple[int, ...]):
+        print("sampling at resolution")
         """ Evaluate our INR on a grid of coordinates in order to obtain an image. """
         meshgrid = torch.meshgrid([torch.arange(0, i, device=self.device) for i in resolution], indexing='ij')
         coords = torch.stack(meshgrid, dim=-1)
         coords_norm = coords / torch.tensor(resolution, device=self.device) * 2 - 1
         coords_norm_ = coords_norm.reshape(-1, coords.shape[-1])
-        predictions_ = self.forward(coords_norm_)
+        predictions_, _ = self.forward(coords_norm_)
         predictions = predictions_.reshape(resolution)
+
         return predictions
 
 
@@ -301,9 +334,9 @@ if __name__ == '__main__':
     wandb_logger = WandbLogger(project="hulfsynth_ulfenc")
 
     #initialize network
-    HIDDEN_SIZE = 256 #working well; 256/5/3000
-    NUM_LAYERS = 5
-    TRAINING_EPOCHS = 3000
+    HIDDEN_SIZE = 16 #working well; 256/5/3000
+    NUM_LAYERS = 3
+    TRAINING_EPOCHS = 3
     LEARNING_RATE = 5e-4
 
 
@@ -320,17 +353,15 @@ if __name__ == '__main__':
     print('gt_image, lf_gt loaded')
 
 
-
-
-    dataset = RandomPointsDataset(gt_image, lf_gt, points_num=POINTS_PER_SAMPLE)
+    dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
     dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
     
     # lf_dataset = RandomPointsDataset(lf_gt, points_num=lf_points_per_sample)
     # lf_dataloader = DataLoader(lf_dataset, batch_size=1, num_workers=0, pin_memory=False)
     
     SIREN_FACTOR = 30.0 
-    siren_inr = MLP(dataset.coord_size,
-                    dataset.value_size,
+    siren_inr = MLP(in_size=3,
+                    out_size=5,
                     hidden_size=HIDDEN_SIZE,
                     num_layers=NUM_LAYERS,
                     layer_class=SineLayer, 
