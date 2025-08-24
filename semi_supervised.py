@@ -327,7 +327,8 @@ if __name__ == '__main__':
 
     dataset = RandomPointsDataset(gt_image, lf_gt, points_num=POINTS_PER_SAMPLE)
     dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
-
+    temp = next(iter(dataloader))
+    print(temp[0].shape, temp[1].shape, temp[2].shape)
     # lf_dataset = RandomPointsDataset(lf_gt, points_num=lf_points_per_sample)
     # lf_dataloader = DataLoader(lf_dataset, batch_size=1, num_workers=0, pin_memory=False)
     '''
