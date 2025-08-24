@@ -103,6 +103,12 @@ class RandomPointsDataset(Dataset):
         point_indices_lf = [(F.interpolate(i.unsqueeze(0).unsqueeze(0).to(torch.float32), scale_factor=0.25)).squeeze(0).squeeze(0) for i in point_indices]
         point_indices = [i.to(torch.int32).to(self.device) for i in point_indices]
         point_indices_lf = [i.to(torch.int32).to(self.device) for i in point_indices_lf]
+
+        # print(point_indices[0].device, point_indices_lf[0].shape)
+        # Retrieve image values from selected indices
+        point_values = self.image[tuple(point_indices)]
+        point_values_lf = self.lf_image[tuple(point_indices_lf)]
+        print(point_values.shape, point_values_lf.shape)
         
         # Convert point indices into normalized [-1.0, 1.0] coordinates
         point_coords = torch.stack(point_indices, dim=-1)
