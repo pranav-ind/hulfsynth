@@ -32,10 +32,7 @@ import copy
 
 import wandb
 from lightning.pytorch.loggers import WandbLogger
-import os
 
-# os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-# os.environ["TORCH_USE_CUDA_DSA"] = "1"
 POINTS_PER_SAMPLE = 96*96*4
 lf_points_per_sample = 48*48*4
 class ReLULayer(nn.Module):
