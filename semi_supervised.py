@@ -96,7 +96,7 @@ class RandomPointsDataset(Dataset):
     def __getitem__(self, idx: int):
         # Create random sample of pixel indices
         point_indices = [torch.randint(0, i, (self.points_num,), device=self.device) for i in self.dim_sizes]
-        
+        point_indices = [i.to(torch.int32) for i in point_indices] #interpolate not implemented for 'Long' datatype in cuda
         point_indices_lf = [(F.interpolate(i.unsqueeze(0).unsqueeze(0), scale_factor=0.25)).squeeze(0).squeeze(0) for i in point_indices]
         # Retrieve image values from selected indices
         point_values = self.image[tuple(point_indices)]
