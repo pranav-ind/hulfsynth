@@ -232,8 +232,8 @@ class INRLightningModule(pl.LightningModule):
         dice_loss = self.dice(pred_seg, values_seg)
         mse_loss = nn.functional.mse_loss(outputs_lf, values) * 10 
         
-        tv_loss_img = total_variation(output_image_pre.reshape(96,96,4), reduction ='mean').mean() * 10
-        tv_loss_seg = sum([total_variation(output_seg_pre[:,i].reshape(96,96,4), reduction='mean').mean() for i in range(output_seg_pre.shape[-1])]) #calculating total variation of each tissue and summing them
+        tv_loss_img = 1e-1 * total_variation(output_image_pre.reshape(96,96,4), reduction ='mean').mean()  
+        tv_loss_seg = 1e-2 * sum([total_variation(output_seg_pre[:,i].reshape(96,96,4), reduction='mean').mean() for i in range(output_seg_pre.shape[-1])]) #calculating total variation of each tissue and summing them
         
         loss = dice_loss + mse_loss + tv_loss_img + tv_loss_seg
         print("loss: ", loss.item(), dice_loss.item(), mse_loss.item(), tv_loss_img.item(), tv_loss_seg.item())
