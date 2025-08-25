@@ -344,9 +344,9 @@ if __name__ == '__main__':
     wandb_logger = WandbLogger(project="hulfsynth_ulfenc")
 
     #initialize network
-    HIDDEN_SIZE = 8 #best_config; 256/5/3000
-    NUM_LAYERS = 3
-    TRAINING_EPOCHS = 3
+    HIDDEN_SIZE = 256 #best_config; 256/5/3000
+    NUM_LAYERS = 5
+    TRAINING_EPOCHS = 2500
     LEARNING_RATE = 5e-4
 
 
