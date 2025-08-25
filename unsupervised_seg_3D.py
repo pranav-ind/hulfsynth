@@ -20,6 +20,7 @@ from torch import nn
 import lightning as pl
 import monai
 from monai.losses import DiceLoss, DiceCELoss, SoftclDiceLoss, DiceFocalLoss, NACLLoss
+from kornia.losses import total_variation
 
 
 
@@ -80,7 +81,7 @@ class MLP(nn.Module):
         output_seg_pre = x[:,1:] #output seg before applying activation function
         output_image = self.relu(output_image_pre)
         output_seg = self.softmax(output_seg_pre)
-        return output_image, output_seg
+        return output_image, output_image_pre, output_seg, output_seg_pre
 
 
 
@@ -219,7 +220,7 @@ class INRLightningModule(pl.LightningModule):
         # values_lf = values_lf.view(-1, values_lf.shape[-1])
         print("true_values: ",coords.shape, values.shape, values_seg.shape)
         
-        output_image, output_seg = self.forward(coords)
+        output_image,output_image_pre, output_seg, output_seg_pre = self.forward(coords)
         print("pred: ", output_image.shape, output_seg.shape)
         outputs_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0)
         
@@ -230,9 +231,12 @@ class INRLightningModule(pl.LightningModule):
         # print("seg: ", pred_seg.shape, values_seg.shape)
         dice_loss = self.dice(pred_seg, values_seg)
         mse_loss = nn.functional.mse_loss(outputs_lf, values) * 10 
-
-        loss = dice_loss + mse_loss
-        print("loss: ", loss.item(), dice_loss.item(), mse_loss.item())
+        
+        tv_loss_img = total_variation(output_image_pre.reshape(96,96,4), reduction ='mean').mean() * 10
+        tv_loss_seg = sum([total_variation(output_seg_pre[:,i].reshape(96,96,4), reduction='mean').mean() for i in range(output_seg_pre.shape[-1])]) #calculating total variation of each tissue and summing them
+        
+        loss = dice_loss + mse_loss + tv_loss_img + tv_loss_seg
+        print("loss: ", loss.item(), dice_loss.item(), mse_loss.item(), tv_loss_img.item(), tv_loss_seg.item())
         # loss = loss1 + loss2
         '''
         wandb.log({"total_loss": loss.item(),
@@ -251,7 +255,7 @@ class INRLightningModule(pl.LightningModule):
         psnr_value = psnr(pred_im, self.gt_im.to(pred_im.device)).cpu().item()
         # wandb_logger.log({"total_loss": loss.item(), "psnr": psnr_value, "mse": mse_loss.item(), "seg": dice_loss.item() })
         
-        wandb.log({"total_loss": loss.item(), "psnr": psnr_value, "mse": mse_loss.item(), "seg": dice_loss.item(), "pred_img": wandb.Image(norm(pred_im[:,:,95]), mode='L'), "pred_seg": wandb.Image(pred_seg[2,:,:,95].unsqueeze(0), mode='L') }) #adding channel dimension with unsqueeze(0)
+        wandb.log({"total_loss": loss.item(), "psnr": psnr_value, "mse": mse_loss.item(), "seg": dice_loss.item(), "tv_seg": tv_loss_seg.item(), "tv_img": tv_loss_img.item() , "pred_img": wandb.Image(norm(pred_im[:,:,95]), mode='L'), "pred_seg": wandb.Image(pred_seg[2,:,:,95].unsqueeze(0), mode='L') }) #adding channel dimension with unsqueeze(0)
         # self.log("total_loss", loss.item())
         # self.loggt("psnr", psnr_value)
         return loss
@@ -277,7 +281,7 @@ class INRLightningModule(pl.LightningModule):
         coords = torch.stack(meshgrid, dim=-1)
         coords_norm = coords / torch.tensor(resolution, device=self.device) * 2 - 1
         coords_norm_ = coords_norm.reshape(-1, coords.shape[-1])
-        predictions_, pred_seg_ = self.forward(coords_norm_)
+        predictions_, _, pred_seg_, _ = self.forward(coords_norm_)
         predictions = predictions_.reshape(resolution)
         resolution_seg = list(resolution) + [pred_seg_.shape[-1]] #adding num_tissues to the resolution shape
         pred_seg_ = pred_seg_.reshape(resolution_seg)
@@ -340,10 +344,9 @@ if __name__ == '__main__':
     wandb_logger = WandbLogger(project="hulfsynth_ulfenc")
 
     #initialize network
-    HIDDEN_SIZE = 256 #best_config; 256/5/3000
-    NUM_LAYERS = 5
-
-    TRAINING_EPOCHS = 2500
+    HIDDEN_SIZE = 8 #best_config; 256/5/3000
+    NUM_LAYERS = 3
+    TRAINING_EPOCHS = 3
     LEARNING_RATE = 5e-4
 
 
