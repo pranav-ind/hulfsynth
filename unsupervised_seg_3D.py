@@ -244,13 +244,14 @@ class INRLightningModule(pl.LightningModule):
             })
         '''
         print(loss.item())
-        pred_im  = self.sample_at_resolution(self.gt_im.shape[:-1])
+        pred_im, pred_seg  = self.sample_at_resolution(self.gt_im.shape[:-1])
         # print("pred_img: ", pred_im.shape)
-        wandb_logger.log_image(key="pred", images=[norm(pred_im[:,:,90]).unsqueeze(0), norm(pred_im[:,:,95]).unsqueeze(0)], caption=["slice: 90", "slice: 95"])
+        # wandb_logger.log_image(key="pred", images=[norm(pred_im[:,:,90]).unsqueeze(0), norm(pred_im[:,:,95]).unsqueeze(0), pred_seg[2,:,:,95].unsqueeze(0)], caption=["slice: 90", "slice: 95", "seg_2_slice: 95"]) #adding channel dimension with unsqueeze(0)
         pred_im = pred_im.reshape(self.gt_im.shape)
         psnr_value = psnr(pred_im, self.gt_im.to(pred_im.device)).cpu().item()
-        # wandb.log({"total_loss": loss.item(), "psnr": psnr_value, "hf_loss": loss1.item(), "ulf_loss": loss2.item()})
-        wandb.log({"total_loss": loss.item(), "psnr": psnr_value, "mse": mse_loss.item(), "seg": dice_loss.item() })
+        # wandb_logger.log({"total_loss": loss.item(), "psnr": psnr_value, "mse": mse_loss.item(), "seg": dice_loss.item() })
+        
+        wandb.log({"total_loss": loss.item(), "psnr": psnr_value, "mse": mse_loss.item(), "seg": dice_loss.item(), "pred_img": wandb.Image(norm(pred_im[:,:,95]), mode='L'), "pred_seg": wandb.Image(pred_seg[2,:,:,95].unsqueeze(0), mode='L') }) #adding channel dimension with unsqueeze(0)
         # self.log("total_loss", loss.item())
         # self.loggt("psnr", psnr_value)
         return loss
@@ -270,16 +271,21 @@ class INRLightningModule(pl.LightningModule):
 
     @torch.no_grad()
     def sample_at_resolution(self, resolution: Tuple[int, ...]):
-        print("sampling at resolution")
+        print("sampling at resolution: ", resolution)
         """ Evaluate our INR on a grid of coordinates in order to obtain an image. """
         meshgrid = torch.meshgrid([torch.arange(0, i, device=self.device) for i in resolution], indexing='ij')
         coords = torch.stack(meshgrid, dim=-1)
         coords_norm = coords / torch.tensor(resolution, device=self.device) * 2 - 1
         coords_norm_ = coords_norm.reshape(-1, coords.shape[-1])
-        predictions_, _ = self.forward(coords_norm_)
+        predictions_, pred_seg_ = self.forward(coords_norm_)
         predictions = predictions_.reshape(resolution)
-
-        return predictions
+        resolution_seg = list(resolution) + [pred_seg_.shape[-1]] #adding num_tissues to the resolution shape
+        pred_seg_ = pred_seg_.reshape(resolution_seg)
+        # print("pred_seg_: ", pred_seg_.shape)
+        pred_seg = [pred_seg_[:,:,:,i].reshape(resolution) for i in range(pred_seg_.shape[-1])]
+        pred_seg = torch.stack(pred_seg, axis = 0)
+        # print("pred_seg: ", pred_seg.shape)
+        return predictions, pred_seg
 
 
 
@@ -334,9 +340,10 @@ if __name__ == '__main__':
     wandb_logger = WandbLogger(project="hulfsynth_ulfenc")
 
     #initialize network
-    HIDDEN_SIZE = 256 #working well; 256/5/3000
-    NUM_LAYERS = 5
-    TRAINING_EPOCHS = 3000
+    HIDDEN_SIZE = 8 #working well; 256/5/3000
+    NUM_LAYERS = 3
+
+    TRAINING_EPOCHS = 3
     LEARNING_RATE = 5e-4
 
 
@@ -373,8 +380,7 @@ if __name__ == '__main__':
     siren_module = INRLightningModule(network=siren_inr,
                                     gt_im=gt_image,
                                     lr=LEARNING_RATE,
-                                    name='SIREN',
-                                    )
+                                    name='SIREN',)
 
 
 
@@ -392,13 +398,15 @@ if __name__ == '__main__':
 
 
     # pred_img_inr = inr_module.sample_at_resolution(gt_image.shape[:-1])
-    pred_img_siren = siren_module.sample_at_resolution(gt_image.shape[:-1])
+    pred_img_siren, pred_seg = siren_module.sample_at_resolution(gt_image.shape[:-1])
 
 
     # plt.imshow(pred_img_inr[:,:,95], cmap='gray')
     # plt.imsave('./results/pred_img_inr.png', pred_img_inr[:,:,95])
     plt.imshow(pred_img_siren[:,:,95], cmap='gray')
+    plt.imshow(pred_seg[2,:,:,95], cmap='gray')
     plt.imsave('./results/pred_img_siren.png', pred_img_siren[:,:,95])
+    plt.imsave('./results/pred_seg.png', pred_seg[2,:,:,95])
 
     fig = plot_scores([siren_module])
     fig.savefig('./results/psnr.png')
