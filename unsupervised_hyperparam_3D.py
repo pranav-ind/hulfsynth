@@ -368,7 +368,7 @@ if __name__ == '__main__':
     
     # lf_dataset = RandomPointsDataset(lf_gt, points_num=lf_points_per_sample)
     # lf_dataloader = DataLoader(lf_dataset, batch_size=1, num_workers=0, pin_memory=False)
-    
+    '''
     SIREN_FACTOR = 30.0 
     siren_inr = MLP(in_size=3,
                     out_size=5,
@@ -413,4 +413,4 @@ if __name__ == '__main__':
 
     fig = plot_scores([siren_module])
     fig.savefig('./results/psnr.png')
-    
+    '''

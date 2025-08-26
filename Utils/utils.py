@@ -26,9 +26,15 @@ def get_model(config):
         return models.Finer(in_features=config["in_features"], out_features=8, hidden_layers=config["hidden_layers"], hidden_features=config["hidden_features"], first_omega=config["w0"], hidden_omega=config["w0"], init_method='sine', init_gain=1, fbs=None)
 
 
+def psnr(pred, ref):
+    max_value = ref.max()
+    mse = torch.mean((pred - ref) ** 2, dim=(-2, -1))
+    out = 20 * torch.log10(max_value / torch.sqrt(mse))
+    return out.mean()
 
-
-
+def normalize_psnr(psnr_value, min_val=15.0, max_val=30.0):
+    psnr_norm = (psnr_value - min_val) / (max_val - min_val)
+    return torch.clamp(psnr_norm, 0.0, 1.0)
 
 def get_device():
     
