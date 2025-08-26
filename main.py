@@ -66,9 +66,9 @@ if __name__ == '__main__':
     dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
     dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
 
-    HIDDEN_SIZE = 8 #best_config; 256/5/3000
-    NUM_LAYERS = 3
-    TRAINING_EPOCHS = 50
+    HIDDEN_SIZE = 256 #best_config; 256/5/3000
+    NUM_LAYERS = 4
+    TRAINING_EPOCHS = 2500
     LEARNING_RATE = 5e-4
 
     SIREN_FACTOR = 30.0 
