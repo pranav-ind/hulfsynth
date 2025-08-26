@@ -135,27 +135,28 @@ class ModelTrainerModule(pl.LightningModule):
 
         #Compute Losses
         loss, mse_loss, dice_loss, tv_loss_img, tv_loss_seg = self.compute_loss(outputs_lf, values, output_image_pre, pred_seg, values_seg, output_seg_pre)
-        
+
 
         
         #HF metrics over training
-        pred_im, pred_seg  = self.sample_at_resolution(self.hf_gt_im.shape[:-1]) #TODO: move HF validation metrics to another method
-        psnr_hf =  self.psnr_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
-        ssim_hf =  self.ssim_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
+        if (self.current_epoch % 100)== 0:
+            pred_im, pred_seg  = self.sample_at_resolution(self.hf_gt_im.shape[:-1]) #TODO: move HF validation metrics to another method
+            psnr_hf =  self.psnr_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
+            ssim_hf =  self.ssim_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
 
-        print("psnr_hf: ", psnr_hf, "ssim_hf: ", ssim_hf)
-        
-        
-        #RQS: LF metrics over training
-        rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_ = self.compute_rqs(pred_im, pred_seg)
-        
-        
-        wandb.log({ 
-        "psnr_hf": psnr_hf.item(), "ssim_hf": ssim_hf.item(),
-        "psnr_lf": psnr_.item(), "normalized_psnr_lf": normalized_psnr_.item(), "ssim_lf": ssim_.item(), "dice_lf": dice_.item(), "iou_lf": iou_.item(), "RQS": rqs_.item(),
-        "total_loss": loss.item(), "mse": mse_loss.item(), "seg": dice_loss.item(), "tv_seg": tv_loss_seg.item(), "tv_img": tv_loss_img.item(), 
-        "pred_img": wandb.Image(norm(pred_im[:,:,95].unsqueeze(0)), mode='L'), "pred2_seg": wandb.Image(pred_seg[2,:,:,95].unsqueeze(0), mode='L'), "pred1_seg": wandb.Image(pred_seg[1,:,:,95].unsqueeze(0), mode='L'), "pred3_seg": wandb.Image(pred_seg[3,:,:,95].unsqueeze(0), mode='L') #adding channel dimension with unsqueeze(0)
-        }) 
+            print("psnr_hf: ", psnr_hf, "ssim_hf: ", ssim_hf)
+            
+            
+            #RQS: LF metrics over training
+            rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_ = self.compute_rqs(pred_im, pred_seg)
+            
+            
+            wandb.log({ 
+            "psnr_hf": psnr_hf.item(), "ssim_hf": ssim_hf.item(),
+            "psnr_lf": psnr_.item(), "normalized_psnr_lf": normalized_psnr_.item(), "ssim_lf": ssim_.item(), "dice_lf": dice_.item(), "iou_lf": iou_.item(), "RQS": rqs_.item(),
+            "total_loss": loss.item(), "mse": mse_loss.item(), "seg": dice_loss.item(), "tv_seg": tv_loss_seg.item(), "tv_img": tv_loss_img.item(), 
+            "pred_img": wandb.Image(norm(pred_im[:,:,95].unsqueeze(0)), mode='L'), "pred2_seg": wandb.Image(pred_seg[2,:,:,95].unsqueeze(0), mode='L'), "pred1_seg": wandb.Image(pred_seg[1,:,:,95].unsqueeze(0), mode='L'), "pred3_seg": wandb.Image(pred_seg[3,:,:,95].unsqueeze(0), mode='L') #adding channel dimension with unsqueeze(0)
+            }) 
         # wandb_logger.log_image(key="pred", images=[norm(pred_im[:,:,90]).unsqueeze(0), norm(pred_im[:,:,95]).unsqueeze(0), pred_seg[2,:,:,95].unsqueeze(0)], caption=["slice: 90", "slice: 95", "seg_2_slice: 95"]) #adding channel dimension with unsqueeze(0)
         return loss
 
