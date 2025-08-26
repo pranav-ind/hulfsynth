@@ -103,8 +103,8 @@ class ModelTrainerModule(pl.LightningModule):
         
 
         # RQS = (0.3 * dice) + (0.2 * iou) + (0.3 * ssim) + (0.2 * psnr) -> slightly more biased towards structural indices (dice/ssim)
-        psnr_ = self.psnr_value(pred_lf_im.unsqueeze(0), self.lf_gt_im.permute(3,0,1,2))
-        ssim_ = self.ssim_value(pred_lf_im.unsqueeze(0).unsqueeze(0), self.lf_gt_im.permute(3,0,1,2).unsqueeze(0))
+        psnr_ = self.psnr_value(pred_lf_im.unsqueeze(0).to('cpu'), self.lf_gt_im.permute(3,0,1,2).to('cpu'))
+        ssim_ = self.ssim_value(pred_lf_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.lf_gt_im.permute(3,0,1,2).unsqueeze(0).to('cpu'))
         dice_ = self.dice_score(pred_lf_seg.unsqueeze(0).to('cpu'), self.lf_gt_seg.to('cpu')).mean()
         iou_ = self.iou_score(pred_lf_seg.unsqueeze(0).to('cpu'), self.lf_gt_seg.to('cpu')).mean()
         normalized_psnr_ = normalize_psnr(psnr_) #normalizing to [0, 1] i.e., maps : [15.0, 30.0] -> [0, 1]
@@ -140,8 +140,8 @@ class ModelTrainerModule(pl.LightningModule):
         
         #HF metrics over training
         pred_im, pred_seg  = self.sample_at_resolution(self.hf_gt_im.shape[:-1]) #TODO: move HF validation metrics to another method
-        psnr_hf =  self.psnr_value(pred_im.unsqueeze(0).unsqueeze(0), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0))
-        ssim_hf =  self.ssim_value(pred_im.unsqueeze(0).unsqueeze(0), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0))
+        psnr_hf =  self.psnr_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
+        ssim_hf =  self.ssim_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
 
         print("psnr_hf: ", psnr_hf, "ssim_hf: ", ssim_hf)
         
