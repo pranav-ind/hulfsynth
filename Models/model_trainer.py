@@ -29,6 +29,7 @@ class ModelTrainerModule(pl.LightningModule):
                  hf_gt_im: torch.Tensor,
                  lf_gt_im: torch.Tensor, 
                  lf_gt_seg: torch.Tensor,
+                 config: dict,
                  lr: float = 0.001,
                  name: str = "",
                  eval_interval: int = 100,
@@ -51,6 +52,7 @@ class ModelTrainerModule(pl.LightningModule):
         self.hf_chunk_size = (96,96,4)
         self.lf_chunk_size = (96//2,96//2,4)
         self.num_classes = 4
+        self.config = config
 
 
         self.dice_score = monai.metrics.DiceMetric()
@@ -70,10 +72,10 @@ class ModelTrainerModule(pl.LightningModule):
         """
         Computes loss for each chunk (batch)
         """
-        mse_loss = F.mse_loss(pred_lf, lf_gt) * 10 
-        dice_loss = self.dice(pred_seg_dice, lf_gt_seg_dice)
-        tv_loss_img = 1e-1 * total_variation(output_image_pre.reshape(self.hf_chunk_size), reduction ='mean').mean()  
-        tv_loss_seg = 1e-2 * sum([total_variation(output_seg_pre[:,i].reshape(self.hf_chunk_size), reduction='mean').mean() for i in range(output_seg_pre.shape[-1])]) #calculating total variation of each tissue and summing them
+        mse_loss = self.config["l1"] *  F.mse_loss(pred_lf, lf_gt) 
+        dice_loss = self.config["l3"] * self.dice(pred_seg_dice, lf_gt_seg_dice)
+        tv_loss_img = self.config["l4"] * total_variation(output_image_pre.reshape(self.hf_chunk_size), reduction ='mean').mean()  
+        tv_loss_seg = self.config["l5"] * sum([total_variation(output_seg_pre[:,i].reshape(self.hf_chunk_size), reduction='mean').mean() for i in range(output_seg_pre.shape[-1])]) #calculating total variation of each tissue and summing them
         loss = dice_loss + mse_loss + tv_loss_img + tv_loss_seg
         
         print("loss: ", loss.item(), dice_loss.item(), mse_loss.item(), tv_loss_img.item(), tv_loss_seg.item())        

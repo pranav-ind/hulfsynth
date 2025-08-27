@@ -15,7 +15,7 @@ import copy
 import lightning as pl
 from lightning.pytorch.loggers import WandbLogger
 import wandb
-
+import pprint
 
 import monai
 from monai.losses import DiceLoss, DiceCELoss, SoftclDiceLoss, DiceFocalLoss, NACLLoss
@@ -40,18 +40,111 @@ from Data.patchwise3D import RandomPointsDataset
 POINTS_PER_SAMPLE = 96*96*4
 lf_points_per_sample = 48*48*4
 
-def wandb_setup(siren_module):
+def wandb_setup():
     wandb.login()
     project_ = "hulfsynth_ulfenc"
     run = wandb.init(project=project_)
     wandb_logger = WandbLogger(project=project_)
-    wandb_logger.watch(siren_module, log="all")
+    # wandb_logger.watch(siren_module, log="all")
     return run, wandb_logger
 
 
 
-if __name__ == '__main__':
 
+def wand_train():
+    
+    project_ = "hulfsynth_ulfenc"
+    run = wandb.init(project=project_)
+    wandb_logger = WandbLogger(project=project_)
+    with run:
+        dataset_num = 1
+        pl.seed_everything(seed=9600, workers=True)
+        config_ = copy.deepcopy(default_config)
+        config_["in_features"] = 3
+        # config["total_steps"] = wandb.config.epochs
+        
+        config_["l3"] = wandb.config.l3
+        config_["l4"] = wandb.config.l4
+        config_["l1"] = wandb.config.l1
+        config_["l5"] = wandb.config.l5
+        
+        HIDDEN_SIZE = 256 #best_config; 256/5/3000
+        NUM_LAYERS = 5
+        TRAINING_EPOCHS = wandb.config.epochs
+        LEARNING_RATE = 5e-4
+        SIREN_FACTOR = 30.0 
+
+        hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config_) #uncomment
+        gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
+        gt_image = gt_image.to(torch.float32)
+        lf_gt = torch.tensor(norm(lf_gt)).unsqueeze(-1)
+        lf_gt = lf_gt.to(torch.float32)
+
+        dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
+        dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
+
+        siren_inr = MLP(in_size=config_["in_features"],
+                    out_size=5,
+                    hidden_size=8,
+                    num_layers=3,
+                    layer_class=SineLayer, 
+                    siren_factor=SIREN_FACTOR,
+                    )
+        initialize_siren_weights(siren_inr, SIREN_FACTOR)
+        siren_module = ModelTrainerModule(network=siren_inr,
+                                    hf_gt_im=gt_image,
+                                    lf_gt_im = lf_gt,
+                                    lf_gt_seg = lf_gt_seg_dice,
+                                    config = config_,                                    
+                                    lr=LEARNING_RATE,
+                                    name='SIREN',
+                                    )
+        trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger)
+        wandb_logger.watch(siren_module, log="all")
+        trainer.fit(siren_module, train_dataloaders=dataloader)
+        
+        # model_saving_path =  "./wandb/model.onnx"
+        # torch.onnx.export(trainer.model, trainer.model_input, model_saving_path)
+        # print("locally saved model to: ", model_saving_path)
+        # wandb.save(model_saving_path)
+
+        # run.log_model(path=model_saving_path, name="model")
+        run.finish()
+
+
+
+sweep_config = {
+    "method": "random",
+    "metric": {"goal": "minimize", "name": "loss"},
+    "parameters": 
+    {
+    # 'l4': {'values': [ [0.65, 0.65, 0.65, 5], [0.5, 0.5, 0.5, 5], [0.6, 0.6, 0.6, 5], [0.55, 0.55, 0.55, 5]]},
+    # 'l5': {'values': [ [1e-2, 1e-2, 1e-3, 9e-2], [9e-2, 9e-2, 9e-3, 9e-2], [5e-2, 5e-2, 5e-3, 9e-2]]},
+    # 'w0': {'values': [25, 30, 20, 35]},
+    # 'lr': {'values': [7.5e-4, 1e-4, 2.5e-4,5e-4]},
+    # 'l1': {'values': [ 1.75, 2, 2.25, 2.5]},
+    # 'l3': {'values': [0.65, 0.7, 0.6, 0.5,0.55,0.75]},
+    'epochs': {'values': [ 1500, 1800, 2000, 2500, 3000cl]},
+    'l1': {'values': [1e-1, 1e-2, 1, 2, 2.25, 2.5, 1e1]},
+    'l3': {'values': [1e-1, 1, 2.5, 1e1]},
+    'l4': {'values': [1e-1,  1e-2, 5e-2, 1, 2.5]},
+    'l5': {'values': [1e-1,  1e-2, 5e-2, 1, 2.5]}
+
+
+    
+    } #refer documentation to choose values from a distribution
+
+}
+
+
+
+if __name__ == '__main__':
+    wandb.login()
+    pprint.pprint(sweep_config)
+    sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth_ulfenc")
+    wandb.agent(sweep_id, function=wand_train, count=15)
+
+    '''
     config = copy.deepcopy(default_config)
     config["in_features"] = 3
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
@@ -70,7 +163,6 @@ if __name__ == '__main__':
     NUM_LAYERS = 4
     TRAINING_EPOCHS = 2500
     LEARNING_RATE = 5e-4
-
     SIREN_FACTOR = 30.0 
     siren_inr = MLP(in_size=3,
                     out_size=5,
@@ -92,3 +184,4 @@ if __name__ == '__main__':
 
     trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger)
     trainer.fit(siren_module, train_dataloaders=dataloader)
+    '''
