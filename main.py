@@ -63,9 +63,9 @@ def wand_train():
         config_["in_features"] = 3
         # config["total_steps"] = wandb.config.epochs
         
-        config_["l3"] = wandb.config.l3
+        config_["l1"] = 1 #wandb.config.l1
+        config_["l3"] = 1 #wandb.config.l3
         config_["l4"] = wandb.config.l4
-        config_["l1"] = wandb.config.l1
         config_["l5"] = wandb.config.l5
         
         HIDDEN_SIZE = 256 #best_config; 256/5/3000
