@@ -63,7 +63,7 @@ def wand_train():
         config_["in_features"] = 3
         # config["total_steps"] = wandb.config.epochs
         
-        config_["l1"] = 1 #wandb.config.l1
+        config_["l1"] = 10 #wandb.config.l1
         config_["l3"] = 1 #wandb.config.l3
         config_["l4"] = wandb.config.l4
         config_["l5"] = wandb.config.l5
