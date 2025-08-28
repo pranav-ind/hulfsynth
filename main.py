@@ -42,7 +42,7 @@ lf_points_per_sample = 48*48*4
 
 def wandb_setup():
     wandb.login()
-    project_ = "hulfsynth_ulfenc"
+    project_ = "hulfsynth"
     run = wandb.init(project=project_)
     wandb_logger = WandbLogger(project=project_)
     # wandb_logger.watch(siren_module, log="all")
@@ -53,7 +53,7 @@ def wandb_setup():
 
 def wand_train():
     
-    project_ = "hulfsynth_ulfenc"
+    project_ = "hulfsynth"
     run = wandb.init(project=project_)
     wandb_logger = WandbLogger(project=project_)
     with run:
@@ -124,11 +124,11 @@ sweep_config = {
     # 'lr': {'values': [7.5e-4, 1e-4, 2.5e-4,5e-4]},
     # 'l1': {'values': [ 1.75, 2, 2.25, 2.5]},
     # 'l3': {'values': [0.65, 0.7, 0.6, 0.5,0.55,0.75]},
-    'epochs': {'values': [ 1500, 1800, 2000, 2500, 3000]},
-    'l1': {'values': [1e-1, 1e-2, 1, 2, 2.25, 2.5, 1e1]},
-    'l3': {'values': [1e-1, 1, 2.5, 1e1]},
-    'l4': {'values': [1e-1,  1e-2, 5e-2, 1, 2.5]},
-    'l5': {'values': [1e-1,  1e-2, 5e-2, 1, 2.5]}
+    'epochs': {'values': [ 2000, 2500,]},
+    'l1': {'values': [1e1]},
+    'l3': {'values': [1]},
+    'l4': {'values': [1e-1,  1e-2]},
+    'l5': {'values': [1e-1,  1e-2]}
 
 
     
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     wandb.login()
     pprint.pprint(sweep_config)
     sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth_ulfenc")
-    wandb.agent(sweep_id, function=wand_train, count=15)
+    wandb.agent(sweep_id, function=wand_train, count=3)
 
     '''
     config = copy.deepcopy(default_config)
