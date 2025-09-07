@@ -346,7 +346,7 @@ if __name__ == '__main__':
     #initialize network
     HIDDEN_SIZE = 256 #best_config; 256/5/3000
     NUM_LAYERS = 5
-    TRAINING_EPOCHS = 5
+    TRAINING_EPOCHS = 2500
     LEARNING_RATE = 5e-4
 
 
