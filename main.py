@@ -55,7 +55,7 @@ def wandb_setup():
 
 def wand_train():
     
-    project_ = "hulfsynth_enc"
+    project_ = "hulfsynth"
     run = wandb.init(project=project_)
     wandb_logger = WandbLogger(project=project_)
     with run:
@@ -126,15 +126,24 @@ sweep_config = {
     # 'lr': {'values': [7.5e-4, 1e-4, 2.5e-4,5e-4]},
     # 'l1': {'values': [ 1.75, 2, 2.25, 2.5]},
     # 'l3': {'values': [0.65, 0.7, 0.6, 0.5,0.55,0.75]},
-    'epochs': {'values': [ 2000, 2500, 3000]},
+    'epochs': {'values': [2000, 2500, 3000]},
     'l1': {'values': [1e1, 1e2, 1, 2.5, 7.5]},
     'l3': {'values': [1, 5, 1e1, 1e-1, 1e2]},
-    'l4': {'values': [1e-1,  1e-2, 1e-3, 1e-4, 1e-5]},
-    'l5': {'values': [1e-1,  1e-2, 1e-3, 1e-4, 1e-5]}
-
-
-    
-    } #refer documentation to choose values from a distribution
+    # 'l4': {'values': [1e-1,  1e-2, 1e-3, 1e-4, 1e-5]},
+    # 'l5': {'values': [1e-1,  1e-2, 1e-3, 1e-4, 1e-5]},
+    'l4': {
+        # a flat distribution between 0 and 0.1
+        'distribution': 'uniform',
+        'min': 0,
+        'max': 0.1
+      },
+    'l5': {
+        # a flat distribution between 0 and 0.1
+        'distribution': 'uniform',
+        'min': 0,
+        'max': 0.1
+      }
+    } 
 
 }
 
@@ -143,47 +152,5 @@ sweep_config = {
 if __name__ == '__main__':
     wandb.login()
     pprint.pprint(sweep_config)
-    sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth_enc")
-    wandb.agent(sweep_id, function=wand_train, count=15)
-
-    '''
-    config = copy.deepcopy(default_config)
-    config["in_features"] = 3
-    hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
-    gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
-    gt_image = gt_image.to(torch.float32)
-    lf_gt = torch.tensor(norm(lf_gt)).unsqueeze(-1)
-    lf_gt = lf_gt.to(torch.float32)
-    print("gt_image: ", gt_image.shape, "lf_gt: ", lf_gt.shape, "lf_gt_seg_dice: ", lf_gt_seg_dice.shape)
-    print('gt_image, lf_gt loaded')
-
-
-    dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
-    dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
-
-    HIDDEN_SIZE = 256 #best_config; 256/5/3000
-    NUM_LAYERS = 4
-    TRAINING_EPOCHS = 2500
-    LEARNING_RATE = 5e-4
-    SIREN_FACTOR = 30.0 
-    siren_inr = MLP(in_size=3,
-                    out_size=5,
-                    hidden_size=8,
-                    num_layers=3,
-                    layer_class=SineLayer, 
-                    siren_factor=30.0,
-                    )
-    # Re-initialize the weights and make sure they are different
-    initialize_siren_weights(siren_inr, 30.0)
-    siren_module = ModelTrainerModule(network=siren_inr,
-                                    hf_gt_im=gt_image,
-                                    lf_gt_im = lf_gt,
-                                    lf_gt_seg = lf_gt_seg_dice,
-                                    lr=LEARNING_RATE,
-                                    name='SIREN',)
-    run, wandb_logger  = wandb_setup(siren_module)
-
-
-    trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger)
-    trainer.fit(siren_module, train_dataloaders=dataloader)
-    '''
+    sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth")
+    wandb.agent(sweep_id, function=wand_train, count=50)
