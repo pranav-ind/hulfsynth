@@ -42,7 +42,7 @@ lf_points_per_sample = 48*48*4
 
 def wandb_setup(siren_module):
     wandb.login()
-    project_ = "hulfsynth"
+    project_ = "hulfsynth_enc"
     run = wandb.init(project=project_)
     wandb_logger = WandbLogger(project=project_)
     wandb_logger.watch(siren_module, log="all")

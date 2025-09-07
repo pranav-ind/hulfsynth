@@ -372,10 +372,10 @@ def wand_train():
         dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
         dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
 
-        siren_inr = MLP(in_size=config_["in_features"],
+        siren_inr = MLP(in_size=3,
                     out_size=5,
-                    hidden_size=8,
-                    num_layers=3,
+                    hidden_size=HIDDEN_SIZE,
+                    num_layers=NUM_LAYERS,
                     layer_class=SineLayer, 
                     siren_factor=SIREN_FACTOR,
                     )
@@ -415,6 +415,6 @@ sweep_config = {
 if __name__ == '__main__':
     wandb.login()
     pprint.pprint(sweep_config)
-    sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth_ulfenc")
+    sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth")
     wandb.agent(sweep_id, function=wand_train, count=3)
     # pl.seed_everything(seed=9600, workers=True)

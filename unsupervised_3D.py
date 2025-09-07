@@ -385,20 +385,13 @@ if __name__ == '__main__':
                                     lr=LEARNING_RATE,
                                     name='SIREN',)
 
-
-
-
     trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger)
-    
     wandb_logger.watch(siren_module, log="all")
-
 
 
     s = datetime.now()
     trainer.fit(siren_module, train_dataloaders=dataloader)
     print(f"Fitting time: {datetime.now()-s}s.")
-
-
 
     # pred_img_inr = inr_module.sample_at_resolution(gt_image.shape[:-1])
     pred_img_siren, pred_seg = siren_module.sample_at_resolution(gt_image.shape[:-1])
