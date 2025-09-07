@@ -1,0 +1,12 @@
+wandb_version: 1
+
+epochs:
+  value: 25
+l1:
+  value: 10
+l3:
+  value: 1
+l4:
+  value: 0.1
+l5:
+  value: 0.01

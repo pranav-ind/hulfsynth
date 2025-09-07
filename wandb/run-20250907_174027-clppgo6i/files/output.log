@@ -1,0 +1,172 @@
+Seed set to 9600
+Device =  mps
+torch.Size([87, 96, 192])
+BG Noise in different regions : 4.7445857300717 4.415978248235479 4.956849146645869 4.8247938816077935
+known_m =  [0.75 0.9  0.9 ]
+[[ 28.84998854   0.          -7.89492106]
+ [ 28.84998854 -22.35619149   0.        ]
+ [  0.          22.35619149  -7.89492106]] [14.53206245  1.51691906 13.01514339]
+             m_init  epsilon  ...                                                  x          cost
+0   [0.1, 0.1, 0.1]     0.00  ...  [0.5281175007125722, 0.6136673429350383, 0.089...  1.339833e-13
+1   [0.1, 0.1, 0.1]     0.01  ...  [0.5039685245846182, 0.5825012648477653, 0.000...  5.933122e-03
+2   [0.1, 0.1, 0.1]     0.05  ...  [0.5036924098303378, 0.5821347147617583, 0.000...  2.963414e-02
+3   [0.1, 0.1, 0.1]     0.10  ...  [0.5037021480660353, 0.5821344785992446, 0.000...  5.927884e-02
+4   [0.1, 0.1, 0.1]     0.20  ...  [0.5034944455118686, 0.5818408952359192, 0.000...  1.184857e-01
+..              ...      ...  ...                                                ...           ...
+59  [0.5, 0.5, 0.5]     0.10  ...  [0.503703135862992, 0.5821357532489501, 0.0004...  5.927909e-02
+60  [0.5, 0.5, 0.5]     0.20  ...  [0.5034944061860982, 0.581840844492722, 0.0002...  1.184857e-01
+61  [0.5, 0.5, 0.5]     0.30  ...  [0.5033319499615745, 0.5816056761803009, 0.000...  1.776547e-01
+62  [0.5, 0.5, 0.5]     0.40  ...  [0.5031805390838267, 0.5813847875960438, 0.000...  2.367855e-01
+63  [0.5, 0.5, 0.5]     0.50  ...  [0.5030335895457605, 0.5811696824286401, 9.385...  2.958782e-01
+
+[64 rows x 7 columns]
+Solution :  [0.60813009 0.71692118 0.38157238]
+(87, 96, 192) (87, 96, 192) (174, 192, 192) 28.849988539317234 [0.60813009 0.71692118 0.38157238]
+torch.Size([87, 96, 192])
+pixels shape =  torch.Size([1603584, 1])
+torch.Size([1, 6414336]) torch.Size([1, 4, 174, 192, 192]) torch.Size([1, 1603584]) torch.Size([1, 4, 87, 96, 192])
+Device =  mps
+💡 Tip: For seamless cloud uploads and versioning, try installing [litmodels](https://pypi.org/project/litmodels/) to enable LitModelCheckpoint, which syncs automatically with the Lightning model registry.
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+HPU available: False, using: 0 HPUs
+[34m[1mwandb[0m: logging graph, to disable use `wandb.watch(log_graph=False)`
+
+  | Name    | Type       | Params | Mode
+-----------------------------------------------
+0 | network | MLP        | 221    | train
+1 | dice    | DiceCELoss | 0      | train
+-----------------------------------------------
+221       Trainable params
+0         Non-trainable params
+221       Total params
+0.001     Total estimated model params size (MB)
+16        Modules in train mode
+0         Modules in eval mode
+Epoch 0:   0%|                                                                                                                   | 0/1 [00:00<?, ?it/s]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.9022440910339355 2.030533790588379 0.8650258779525757 0.004783196374773979 0.0019010350806638598
+2.9022440910339355
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 1:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.887399196624756 2.0281786918640137 0.8530852794647217 0.004321570973843336 0.0018136753933504224
+2.887399196624756
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 2:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.8509013652801514 2.0298964977264404 0.8153766989707947 0.0039030860643833876 0.001724910456687212
+2.8509013652801514
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 3:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.8179752826690674 2.0271191596984863 0.7857317924499512 0.0034913253039121628 0.0016330198850482702
+2.8179752826690674
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 4:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.842655897140503 2.02203631401062 0.8159375786781311 0.003139617620036006 0.0015423332806676626
+2.842655897140503
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 5:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.864198684692383 2.0180552005767822 0.8418638110160828 0.0028219036757946014 0.0014575880486518145
+2.864198684692383
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 6:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.839240074157715 2.0209102630615234 0.8143964409828186 0.0025543600786477327 0.0013790790690109134
+2.839240074157715
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 7:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.858797311782837 2.0177927017211914 0.8374113440513611 0.00229919096454978 0.0012938386062160134
+2.858797311782837
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 8:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.829638719558716 2.0144920349121094 0.8118330836296082 0.002087429165840149 0.001226233085617423
+2.829638719558716
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 9:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.8459949493408203 2.009730339050293 0.833214282989502 0.001895920722745359 0.0011544786393642426
+2.8459949493408203
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 10:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.8541674613952637 2.0058531761169434 0.8455056548118591 0.001711742952466011 0.0010968295391649008
+2.8541674613952637
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 11:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.85884690284729 2.0028862953186035 0.8533891439437866 0.0015312907053157687 0.0010399777675047517
+2.85884690284729
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 12:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.8443286418914795 2.004469633102417 0.8375121355056763 0.0013621144462376833 0.0009847559267655015
+2.8443286418914795
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 13:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.85178542137146 2.0014848709106445 0.8481726050376892 0.0011989440536126494 0.0009289346635341644
+2.85178542137146
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 14:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.841468095779419 1.9985383749008179 0.8410212993621826 0.00103990628849715 0.0008686615619808435
+2.841468095779419
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 15:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.8074498176574707 1.9968540668487549 0.8089098334312439 0.0008830646984279156 0.0008028416195884347
+2.8074498176574707
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 16:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.826397657394409 1.9933170080184937 0.8316001892089844 0.0007454570150002837 0.0007348633953370154
+2.826397657394409
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 17:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.8401272296905518 1.9892168045043945 0.8496019244194031 0.0006354246870614588 0.000673013215418905
+2.8401272296905518
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 18:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.7988157272338867 1.9889358282089233 0.8087408542633057 0.000534131599124521 0.0006052020471543074
+2.7988157272338867
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 19:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.8277902603149414 1.9900736808776855 0.8366996645927429 0.0004644406435545534 0.0005525220185518265
+2.8277902603149414
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 20:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.8267507553100586 1.9867230653762817 0.8391245603561401 0.0004013478464912623 0.0005017886287532747
+2.8267507553100586
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 21:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.8518033027648926 1.982325792312622 0.8686581254005432 0.00034978697658516467 0.00046958899474702775
+2.8518033027648926
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 22:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.7951149940490723 1.9833606481552124 0.8109906315803528 0.0003102085611317307 0.00045358698116615415
+2.7951149940490723
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 23:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.8179707527160645 1.9799187183380127 0.837344765663147 0.00027061515720561147 0.00043657608330249786
+2.8179707527160645
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 24:   0%|                                                                                                      | 0/1 [00:00<?, ?it/s, v_num=go6i]true_values:  torch.Size([36864, 3]) torch.Size([1, 9216]) torch.Size([1, 4, 9216])
+pred:  torch.Size([36864]) torch.Size([36864, 4])
+loss:  2.8123080730438232 1.9775830507278442 0.8340566158294678 0.00023897748906165361 0.00042941694846376777
+2.8123080730438232
+sampling at resolution:  torch.Size([174, 192, 192])
+Epoch 24: 100%|██████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00,  1.87it/s, v_num=go6i]
+`Trainer.fit` stopped: `max_epochs=25` reached.

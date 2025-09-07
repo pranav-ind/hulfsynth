@@ -1,0 +1,16 @@
+{"time":"2025-09-07T17:41:01.154111+05:30","level":"INFO","msg":"stream: starting","core version":"0.20.1","symlink path":"/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/wandb/run-20250907_174100-xfd33n7o/logs/debug-core.log"}
+{"time":"2025-09-07T17:41:02.388487+05:30","level":"INFO","msg":"stream: created new stream","id":"xfd33n7o"}
+{"time":"2025-09-07T17:41:02.388578+05:30","level":"INFO","msg":"stream: started","id":"xfd33n7o"}
+{"time":"2025-09-07T17:41:02.388616+05:30","level":"INFO","msg":"writer: Do: started","stream_id":"xfd33n7o"}
+{"time":"2025-09-07T17:41:02.388639+05:30","level":"INFO","msg":"sender: started","stream_id":"xfd33n7o"}
+{"time":"2025-09-07T17:41:02.388719+05:30","level":"INFO","msg":"handler: started","stream_id":"xfd33n7o"}
+{"time":"2025-09-07T17:41:02.888551+05:30","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-09-07T17:41:19.7889+05:30","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-09-07T17:41:19.789314+05:30","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-09-07T17:41:20.796496+05:30","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading media/images/pred_img_19_91498269c9c66961515e.png","runtime_seconds":0.532022458,"progress":"112B/112B"},{"desc":"uploading media/images/pred_seg_19_dda3c90ed1660f2774af.png","runtime_seconds":0.531995959,"progress":"758B/758B"},{"desc":"uploading output.log","runtime_seconds":0.531986041,"progress":"12.1KB/12.1KB"},{"desc":"uploading wandb-summary.json","runtime_seconds":0.5319685,"progress":"883B/883B"}],"total_operations":4}}
+{"time":"2025-09-07T17:41:21.356131+05:30","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-09-07T17:41:22.522885+05:30","level":"INFO","msg":"stream: closing","id":"xfd33n7o"}
+{"time":"2025-09-07T17:41:22.522949+05:30","level":"INFO","msg":"handler: closed","stream_id":"xfd33n7o"}
+{"time":"2025-09-07T17:41:22.52316+05:30","level":"INFO","msg":"sender: closed","stream_id":"xfd33n7o"}
+{"time":"2025-09-07T17:41:22.523149+05:30","level":"INFO","msg":"writer: Close: closed","stream_id":"xfd33n7o"}
+{"time":"2025-09-07T17:41:22.523831+05:30","level":"INFO","msg":"stream: closed","id":"xfd33n7o"}

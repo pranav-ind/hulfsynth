@@ -13,6 +13,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from datetime import datetime
+import pprint
 
 
 
@@ -334,83 +335,86 @@ def initialize_siren_weights(network: MLP, omega: float):
 
 def wandb_setup():
     wandb.login()
-    project_ = "hulfsynth_ulfenc"
+    project_ = "hulfsynth"
     # run_name = "run_" + str(run_id)
     run = wandb.init(project=project_)
 
 
-if __name__ == '__main__':
-    wandb_setup()
-    wandb_logger = WandbLogger(project="hulfsynth_ulfenc")
-
-    #initialize network
-    HIDDEN_SIZE = 256 #best_config; 256/5/3000
-    NUM_LAYERS = 5
-    TRAINING_EPOCHS = 2500
-    LEARNING_RATE = 5e-4
-
-
-    # gt_image.shape
-    # temp = torch.rand(172, 192, 192, 1)
-
-    config = copy.deepcopy(default_config)
-    config["in_features"] = 3
-    hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
-    gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
-    gt_image = gt_image.to(torch.float32)
-    lf_gt = torch.tensor(norm(lf_gt)).unsqueeze(-1)
-    lf_gt = lf_gt.to(torch.float32)
-    print('gt_image, lf_gt loaded')
-
-
-    dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
-    dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
+def wand_train():
     
-    # lf_dataset = RandomPointsDataset(lf_gt, points_num=lf_points_per_sample)
-    # lf_dataloader = DataLoader(lf_dataset, batch_size=1, num_workers=0, pin_memory=False)
-    '''
-    SIREN_FACTOR = 30.0 
-    siren_inr = MLP(in_size=3,
+    project_ = "hulfsynth"
+    run = wandb.init(project=project_)
+    wandb_logger = WandbLogger(project=project_)
+    with run:
+        dataset_num = 1
+        pl.seed_everything(seed=9600, workers=True)
+        config_ = copy.deepcopy(default_config)
+        config_["in_features"] = 3
+        # config["total_steps"] = wandb.config.epochs
+        
+        config_["l1"] = 10 #wandb.config.l1
+        config_["l3"] = 1 #wandb.config.l3
+        config_["l4"] = 1e-1
+        config_["l5"] = 1e-2
+        
+        HIDDEN_SIZE = 256 #best_config; 256/5/3000
+        NUM_LAYERS = 5
+        TRAINING_EPOCHS = wandb.config.epochs
+        LEARNING_RATE = 5e-4
+        SIREN_FACTOR = 30.0 
+
+        hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config_) #uncomment
+        gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
+        gt_image = gt_image.to(torch.float32)
+        lf_gt = torch.tensor(norm(lf_gt)).unsqueeze(-1)
+        lf_gt = lf_gt.to(torch.float32)
+
+        dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
+        dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
+
+        siren_inr = MLP(in_size=config_["in_features"],
                     out_size=5,
-                    hidden_size=HIDDEN_SIZE,
-                    num_layers=NUM_LAYERS,
+                    hidden_size=8,
+                    num_layers=3,
                     layer_class=SineLayer, 
                     siren_factor=SIREN_FACTOR,
                     )
-    # Re-initialize the weights and make sure they are different
-    initialize_siren_weights(siren_inr, SIREN_FACTOR)
-
-    siren_module = INRLightningModule(network=siren_inr,
+        initialize_siren_weights(siren_inr, SIREN_FACTOR)
+        siren_module = INRLightningModule(network=siren_inr,
                                     gt_im=gt_image,
                                     lr=LEARNING_RATE,
                                     name='SIREN',)
+        trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger)
+        wandb_logger.watch(siren_module, log="all")
+        trainer.fit(siren_module, train_dataloaders=dataloader)
+        run.finish()
+
+sweep_config = {
+    "method": "random",
+    "metric": {"goal": "minimize", "name": "loss"},
+    "parameters": 
+    {
+    # 'l4': {'values': [ [0.65, 0.65, 0.65, 5], [0.5, 0.5, 0.5, 5], [0.6, 0.6, 0.6, 5], [0.55, 0.55, 0.55, 5]]},
+    # 'l5': {'values': [ [1e-2, 1e-2, 1e-3, 9e-2], [9e-2, 9e-2, 9e-3, 9e-2], [5e-2, 5e-2, 5e-3, 9e-2]]},
+    # 'w0': {'values': [25, 30, 20, 35]},
+    # 'lr': {'values': [7.5e-4, 1e-4, 2.5e-4,5e-4]},
+    # 'l1': {'values': [ 1.75, 2, 2.25, 2.5]},
+    # 'l3': {'values': [0.65, 0.7, 0.6, 0.5,0.55,0.75]},
+    'epochs': {'values': [ 20, 25,]},
+    'l1': {'values': [1e1]},
+    'l3': {'values': [1]},
+    'l4': {'values': [1e-1,  1e-2]},
+    'l5': {'values': [1e-1,  1e-2]}
 
 
-
-
-    trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger)
     
-    wandb_logger.watch(siren_module, log="all")
+    } #refer documentation to choose values from a distribution
 
+}
 
-
-    s = datetime.now()
-    trainer.fit(siren_module, train_dataloaders=dataloader)
-    print(f"Fitting time: {datetime.now()-s}s.")
-
-
-
-    # pred_img_inr = inr_module.sample_at_resolution(gt_image.shape[:-1])
-    pred_img_siren, pred_seg = siren_module.sample_at_resolution(gt_image.shape[:-1])
-
-
-    # plt.imshow(pred_img_inr[:,:,95], cmap='gray')
-    # plt.imsave('./results/pred_img_inr.png', pred_img_inr[:,:,95])
-    plt.imshow(pred_img_siren[:,:,95], cmap='gray')
-    plt.imshow(pred_seg[2,:,:,95], cmap='gray')
-    plt.imsave('./results/pred_img_siren.png', pred_img_siren[:,:,95])
-    plt.imsave('./results/pred_seg.png', pred_seg[2,:,:,95])
-
-    fig = plot_scores([siren_module])
-    fig.savefig('./results/psnr.png')
-    '''
+if __name__ == '__main__':
+    wandb.login()
+    pprint.pprint(sweep_config)
+    sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth_ulfenc")
+    wandb.agent(sweep_id, function=wand_train, count=3)
+    # pl.seed_everything(seed=9600, workers=True)
