@@ -40,20 +40,22 @@ from Data.patchwise3D import RandomPointsDataset
 POINTS_PER_SAMPLE = 96*96*4
 lf_points_per_sample = 48*48*4
 
+
+'''
 def wandb_setup():
     wandb.login()
-    project_ = "hulfsynth"
+    project_ = "hulfsynth_enc"
     run = wandb.init(project=project_)
     wandb_logger = WandbLogger(project=project_)
     # wandb_logger.watch(siren_module, log="all")
     return run, wandb_logger
-
+'''
 
 
 
 def wand_train():
     
-    project_ = "hulfsynth"
+    project_ = "hulfsynth_enc"
     run = wandb.init(project=project_)
     wandb_logger = WandbLogger(project=project_)
     with run:
@@ -85,8 +87,8 @@ def wand_train():
 
         siren_inr = MLP(in_size=config_["in_features"],
                     out_size=5,
-                    hidden_size=8,
-                    num_layers=3,
+                    hidden_size=HIDDEN_SIZE,
+                    num_layers=NUM_LAYERS,
                     layer_class=SineLayer, 
                     siren_factor=SIREN_FACTOR,
                     )
@@ -124,7 +126,7 @@ sweep_config = {
     # 'lr': {'values': [7.5e-4, 1e-4, 2.5e-4,5e-4]},
     # 'l1': {'values': [ 1.75, 2, 2.25, 2.5]},
     # 'l3': {'values': [0.65, 0.7, 0.6, 0.5,0.55,0.75]},
-    'epochs': {'values': [ 2000, 2500,]},
+    'epochs': {'values': [ 2000, 2500, 3000]},
     'l1': {'values': [1e1]},
     'l3': {'values': [1]},
     'l4': {'values': [1e-1,  1e-2]},
@@ -141,8 +143,8 @@ sweep_config = {
 if __name__ == '__main__':
     wandb.login()
     pprint.pprint(sweep_config)
-    sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth_ulfenc")
-    wandb.agent(sweep_id, function=wand_train, count=3)
+    sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth_enc")
+    wandb.agent(sweep_id, function=wand_train, count=5)
 
     '''
     config = copy.deepcopy(default_config)

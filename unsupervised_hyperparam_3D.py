@@ -333,11 +333,7 @@ def initialize_siren_weights(network: MLP, omega: float):
     new_weights = network.layers[1].linear.weight
     assert (old_weights - new_weights).abs().sum() > 0.0
 
-def wandb_setup():
-    wandb.login()
-    project_ = "hulfsynth"
-    # run_name = "run_" + str(run_id)
-    run = wandb.init(project=project_)
+
 
 
 def wand_train():
