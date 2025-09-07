@@ -65,8 +65,8 @@ def wand_train():
         config_["in_features"] = 3
         # config["total_steps"] = wandb.config.epochs
         
-        config_["l1"] = wandb.config.l1
-        config_["l3"] = wandb.config.l3
+        config_["l1"] = 10 #wandb.config.l1
+        config_["l3"] = 1 #wandb.config.l3
         config_["l4"] = wandb.config.l4
         config_["l5"] = wandb.config.l5
         
@@ -117,7 +117,7 @@ def wand_train():
 
 sweep_config = {
     "method": "random",
-    "metric": {"goal": "maximize", "name": "RQS"},
+    "metric": {"goal": "minimize", "name": "loss"},
     "parameters": 
     {
     # 'l4': {'values': [ [0.65, 0.65, 0.65, 5], [0.5, 0.5, 0.5, 5], [0.6, 0.6, 0.6, 5], [0.55, 0.55, 0.55, 5]]},
@@ -127,10 +127,10 @@ sweep_config = {
     # 'l1': {'values': [ 1.75, 2, 2.25, 2.5]},
     # 'l3': {'values': [0.65, 0.7, 0.6, 0.5,0.55,0.75]},
     'epochs': {'values': [ 2000, 2500, 3000]},
-    'l1': {'values': [1e1, 1e2, 1, 2.5, 7.5]},
-    'l3': {'values': [1, 5, 1e1, 1e-1, 1e2]},
-    'l4': {'values': [1e-1,  1e-2, 1e-3, 1e-4, 1e-5]},
-    'l5': {'values': [1e-1,  1e-2, 1e-3, 1e-4, 1e-5]}
+    'l1': {'values': [1e1]},
+    'l3': {'values': [1]},
+    'l4': {'values': [1e-1,  1e-2]},
+    'l5': {'values': [1e-1,  1e-2]}
 
 
     
@@ -144,46 +144,4 @@ if __name__ == '__main__':
     wandb.login()
     pprint.pprint(sweep_config)
     sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth_enc")
-    wandb.agent(sweep_id, function=wand_train, count=15)
-
-    '''
-    config = copy.deepcopy(default_config)
-    config["in_features"] = 3
-    hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
-    gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
-    gt_image = gt_image.to(torch.float32)
-    lf_gt = torch.tensor(norm(lf_gt)).unsqueeze(-1)
-    lf_gt = lf_gt.to(torch.float32)
-    print("gt_image: ", gt_image.shape, "lf_gt: ", lf_gt.shape, "lf_gt_seg_dice: ", lf_gt_seg_dice.shape)
-    print('gt_image, lf_gt loaded')
-
-
-    dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
-    dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
-
-    HIDDEN_SIZE = 256 #best_config; 256/5/3000
-    NUM_LAYERS = 4
-    TRAINING_EPOCHS = 2500
-    LEARNING_RATE = 5e-4
-    SIREN_FACTOR = 30.0 
-    siren_inr = MLP(in_size=3,
-                    out_size=5,
-                    hidden_size=8,
-                    num_layers=3,
-                    layer_class=SineLayer, 
-                    siren_factor=30.0,
-                    )
-    # Re-initialize the weights and make sure they are different
-    initialize_siren_weights(siren_inr, 30.0)
-    siren_module = ModelTrainerModule(network=siren_inr,
-                                    hf_gt_im=gt_image,
-                                    lf_gt_im = lf_gt,
-                                    lf_gt_seg = lf_gt_seg_dice,
-                                    lr=LEARNING_RATE,
-                                    name='SIREN',)
-    run, wandb_logger  = wandb_setup(siren_module)
-
-
-    trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger)
-    trainer.fit(siren_module, train_dataloaders=dataloader)
-    '''
+    wandb.agent(sweep_id, function=wand_train, count=5)
