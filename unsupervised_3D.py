@@ -334,19 +334,19 @@ def initialize_siren_weights(network: MLP, omega: float):
 
 def wandb_setup():
     wandb.login()
-    project_ = "hulfsynth_ulfenc"
+    project_ = "hulfsynth"
     # run_name = "run_" + str(run_id)
     run = wandb.init(project=project_)
 
 
 if __name__ == '__main__':
     wandb_setup()
-    wandb_logger = WandbLogger(project="hulfsynth_ulfenc")
+    wandb_logger = WandbLogger(project="hulfsynth")
 
     #initialize network
     HIDDEN_SIZE = 256 #best_config; 256/5/3000
     NUM_LAYERS = 5
-    TRAINING_EPOCHS = 2500
+    TRAINING_EPOCHS = 5
     LEARNING_RATE = 5e-4
 
 
