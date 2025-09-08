@@ -123,7 +123,7 @@ sweep_config = {
     
     'epochs': {'values': [1500, 2000, 2500]},
     'l1': {'values': [100]},
-    'l3': {'values': [1]},
+    'l3': {'values': [2]},
     'l4': {'values': [0.04]},
     'l5': {'values': [0.06]},
     
