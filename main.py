@@ -120,30 +120,37 @@ sweep_config = {
     "metric": {"goal": "maximize", "name": "RQS"},
     "parameters": 
     {
-    # 'l4': {'values': [ [0.65, 0.65, 0.65, 5], [0.5, 0.5, 0.5, 5], [0.6, 0.6, 0.6, 5], [0.55, 0.55, 0.55, 5]]},
-    # 'l5': {'values': [ [1e-2, 1e-2, 1e-3, 9e-2], [9e-2, 9e-2, 9e-3, 9e-2], [5e-2, 5e-2, 5e-3, 9e-2]]},
-    # 'w0': {'values': [25, 30, 20, 35]},
-    # 'lr': {'values': [7.5e-4, 1e-4, 2.5e-4,5e-4]},
-    # 'l1': {'values': [ 1.75, 2, 2.25, 2.5]},
-    # 'l3': {'values': [0.65, 0.7, 0.6, 0.5,0.55,0.75]},
-    'epochs': {'values': [2000, 2500, 3000]},
-    'l1': {'values': [1e1, 1e2, 1, 2.5, 7.5]},
-    'l3': {'values': [1, 5, 1e1, 1e-1, 1e2]},
-    # 'l4': {'values': [1e-1,  1e-2, 1e-3, 1e-4, 1e-5]},
-    # 'l5': {'values': [1e-1,  1e-2, 1e-3, 1e-4, 1e-5]},
-    'l4': {
-        # a flat distribution between 0 and 0.1
-        'distribution': 'uniform',
-        'min': 0,
-        'max': 0.1
-      },
-    'l5': {
-        # a flat distribution between 0 and 0.1
-        'distribution': 'uniform',
-        'min': 0,
-        'max': 0.1
-      }
-    } 
+    
+    'epochs': {'values': [1500, 2000, 2500]},
+    'l1': {'values': [100]},
+    'l3': {'values': [1]},
+    'l4': {'values': [0.04]},
+    'l5': {'values': [0.06]},
+    
+    # 'l4': {
+    #     # a flat distribution between 0 and 0.1
+    #     'distribution': 'uniform',
+    #     'min': 0,
+    #     'max': 0.1
+    #   },
+    # 'l5': {
+    #     # a flat distribution between 0 and 0.1
+    #     'distribution': 'uniform',
+    #     'min': 0,
+    #     'max': 0.1
+    #   }
+    
+
+    # 'epochs': {'values': [15, 20, 25]},
+    # 'l1': {'values': [1e2]},
+    # 'l3': {'values': [1]},
+    # 'l4': {'values': [0.04]},
+    # 'l5': {'values': [0.06]},
+    
+    }
+    
+     
+    
 
 }
 
@@ -153,4 +160,4 @@ if __name__ == '__main__':
     wandb.login()
     pprint.pprint(sweep_config)
     sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth")
-    wandb.agent(sweep_id, function=wand_train, count=50)
+    wandb.agent(sweep_id, function=wand_train, count=2)
