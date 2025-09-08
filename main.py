@@ -160,4 +160,4 @@ if __name__ == '__main__':
     wandb.login()
     pprint.pprint(sweep_config)
     sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth")
-    wandb.agent(sweep_id, function=wand_train, count=2)
+    wandb.agent(sweep_id, function=wand_train, count=15)
