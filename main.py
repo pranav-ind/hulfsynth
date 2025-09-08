@@ -114,7 +114,7 @@ def wand_train():
         run.finish()
 
 
-
+'''
 sweep_config = {
     "method": "grid",
     "metric": {"goal": "maximize", "name": "RQS"},
@@ -153,11 +153,15 @@ sweep_config = {
     
 
 }
+'''
 
-
-
+import yaml
 if __name__ == '__main__':
     wandb.login()
+    
+    # Load the YAML config file
+    with open('./sweep_config.yaml', 'r') as file:
+        sweep_config = yaml.safe_load(file)
     pprint.pprint(sweep_config)
     sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth")
-    wandb.agent(sweep_id, function=wand_train, count=15)
+    wandb.agent(sweep_id, function=wand_train, count=2)

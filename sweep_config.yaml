@@ -1,0 +1,17 @@
+program: main.py
+name: sweeptest
+method: random
+metric:
+  goal: maximize
+  name: RQS
+parameters:
+  epochs:
+    values: [20, 25]
+  l1:
+    values: [100]
+  l3:
+    values: [1, 1.25, 1.5, 2]
+  l4:
+    values: [0.04, 0.075]
+  l5:
+    values: [0.06, 0.075]
