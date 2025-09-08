@@ -6,12 +6,12 @@ metric:
   name: RQS
 parameters:
   epochs:
-    values: [20, 25]
+    values: [2000, 2500]
   l1:
-    values: [100]
+    values: [100, 50, 25]
   l3:
     values: [1, 1.25, 1.5, 2]
   l4:
-    values: [0.04, 0.075]
+    values: [0.04, 0.575 , 0.075]
   l5:
-    values: [0.06, 0.075]
+    values: [0.06, 0.675, 0.075]
