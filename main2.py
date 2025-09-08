@@ -42,7 +42,7 @@ lf_points_per_sample = 48*48*4
 
 def wandb_setup(siren_module):
     wandb.login()
-    project_ = "hulfsynth_enc"
+    project_ = "hulfsynth"
     run = wandb.init(project=project_)
     wandb_logger = WandbLogger(project=project_)
     wandb_logger.watch(siren_module, log="all")
@@ -58,10 +58,6 @@ def wandb_setup(siren_module):
 
 
 if __name__ == '__main__':
-    # wandb.login()
-    # pprint.pprint(sweep_config)
-    # sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth_ulfenc")
-    # wandb.agent(sweep_id, function=wand_train, count=15)
 
     pl.seed_everything(seed=9600, workers=True)
     
@@ -85,14 +81,14 @@ if __name__ == '__main__':
     dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
 
     HIDDEN_SIZE = 256 #best_config; 256/5/3000
-    NUM_LAYERS = 4
-    TRAINING_EPOCHS = 2500
+    NUM_LAYERS = 5
+    TRAINING_EPOCHS = 5
     LEARNING_RATE = 5e-4
     SIREN_FACTOR = 30.0 
     siren_inr = MLP(in_size=3,
                     out_size=5,
-                    hidden_size=8,
-                    num_layers=3,
+                    hidden_size=HIDDEN_SIZE,
+                    num_layers=NUM_LAYERS,
                     layer_class=SineLayer, 
                     siren_factor=30.0,
                     )
@@ -110,4 +106,14 @@ if __name__ == '__main__':
 
     trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger)
     trainer.fit(siren_module, train_dataloaders=dataloader)
-    
+
+
+    dummy_input, _ , _ = next(iter(dataloader))
+    dummy_input = dummy_input.view(-1, dummy_input.shape[-1])
+    model_saving_path =  "./wandb/model.onnx"
+    torch.onnx.export(siren_module.network.to('cpu'), dummy_input.to('cpu'), model_saving_path)
+    print("locally saved model to: ", model_saving_path)
+    wandb.save(model_saving_path)
+
+    run.log_model(path=model_saving_path, name="model")
+    run.finish()

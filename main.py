@@ -105,12 +105,14 @@ def wand_train():
         wandb_logger.watch(siren_module, log="all")
         trainer.fit(siren_module, train_dataloaders=dataloader)
         
-        # model_saving_path =  "./wandb/model.onnx"
-        # torch.onnx.export(trainer.model, trainer.model_input, model_saving_path)
-        # print("locally saved model to: ", model_saving_path)
-        # wandb.save(model_saving_path)
+        dummy_input, _ , _ = next(iter(dataloader))
+        dummy_input = dummy_input.view(-1, dummy_input.shape[-1])
+        model_saving_path =  "./wandb/model.onnx"
+        torch.onnx.export(siren_module.network.to('cpu'), dummy_input.to('cpu'), model_saving_path)
+        print("locally saved model to: ", model_saving_path)
+        wandb.save(model_saving_path)
 
-        # run.log_model(path=model_saving_path, name="model")
+        run.log_model(path=model_saving_path, name="model")
         run.finish()
 
 

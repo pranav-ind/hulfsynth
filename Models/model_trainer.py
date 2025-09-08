@@ -145,7 +145,7 @@ class ModelTrainerModule(pl.LightningModule):
 
         
         #HF metrics over training 
-        if (self.current_epoch % 50)== 0: #logging every epoch is expensive ; therefore logging in intervals of 50
+        if (self.current_epoch % 39 )== 0: #logging every epoch is expensive ; therefore logging in intervals of 50
             pred_im, pred_seg  = self.sample_at_resolution(self.hf_gt_im.shape[:-1]) #TODO: move HF validation metrics to another method
             psnr_hf =  self.psnr_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
             ssim_hf =  self.ssim_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
