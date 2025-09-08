@@ -116,16 +116,16 @@ def wand_train():
 
 
 sweep_config = {
-    "method": "random",
+    "method": "grid",
     "metric": {"goal": "maximize", "name": "RQS"},
     "parameters": 
     {
     
-    'epochs': {'values': [1500, 2000, 2500]},
+    'epochs': {'values': [2000, 2500]},
     'l1': {'values': [100]},
-    'l3': {'values': [2]},
-    'l4': {'values': [0.075]},
-    'l5': {'values': [0.075]},
+    'l3': {'values': [1, 1.25, 1.5, 2]},
+    'l4': {'values': [0.04, 0.075]},
+    'l5': {'values': [0.06, 0.075]},
     
     # 'l4': {
     #     # a flat distribution between 0 and 0.1
