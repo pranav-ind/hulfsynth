@@ -124,8 +124,8 @@ sweep_config = {
     'epochs': {'values': [1500, 2000, 2500]},
     'l1': {'values': [100]},
     'l3': {'values': [2]},
-    'l4': {'values': [0.04]},
-    'l5': {'values': [0.06]},
+    'l4': {'values': [0.075]},
+    'l5': {'values': [0.075]},
     
     # 'l4': {
     #     # a flat distribution between 0 and 0.1
