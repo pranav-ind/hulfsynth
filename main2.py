@@ -64,9 +64,9 @@ if __name__ == '__main__':
     config = copy.deepcopy(default_config)
     config["in_features"] = 3
     config["l1"] = 100 #wandb.config.l1
-    config["l3"] = 8 #wandb.config.l3
-    config["l4"] = 0.075
-    config["l5"] = 0.09
+    config["l3"] = 1 #wandb.config.l3
+    config["l4"] = 0.05
+    config["l5"] = 0.07
 
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
     gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
