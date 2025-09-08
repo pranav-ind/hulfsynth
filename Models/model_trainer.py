@@ -108,6 +108,8 @@ class ModelTrainerModule(pl.LightningModule):
         psnr_ = self.psnr_value(pred_lf_im.unsqueeze(0).to('cpu'), self.lf_gt_im.permute(3,0,1,2).to('cpu'))
         ssim_ = self.ssim_value(pred_lf_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.lf_gt_im.permute(3,0,1,2).unsqueeze(0).to('cpu'))
         dice_ = self.dice_score(pred_lf_seg.unsqueeze(0).to('cpu'), self.lf_gt_seg.to('cpu'))
+        print("dice_lf: ", dice_)
+        dice_ = dice_.mean()
         iou_ = self.iou_score(pred_lf_seg.unsqueeze(0).to('cpu'), self.lf_gt_seg.to('cpu')).mean()
         normalized_psnr_ = normalize_psnr(psnr_) #normalizing to [0, 1] i.e., maps : [15.0, 30.0] -> [0, 1]
         
@@ -115,8 +117,7 @@ class ModelTrainerModule(pl.LightningModule):
         img_score = (0.3 * ssim_) + (0.2 * normalized_psnr_) #calculates image metrics of ULF predictions
         rqs_ = seg_score + img_score
 
-        print("dice_lf: ", dice_)
-        dice_ = dice_.mean()
+
         return rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_
 
 
