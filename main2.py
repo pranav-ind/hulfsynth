@@ -63,7 +63,7 @@ if __name__ == '__main__':
     
     config = copy.deepcopy(default_config)
     config["in_features"] = 3
-    config["l1"] = 100 #wandb.config.l1
+    config["l1"] = 1e-2 #wandb.config.l1
     config["l3"] = 1 #wandb.config.l3
     config["l4"] = 0.04
     config["l5"] = 0.06
