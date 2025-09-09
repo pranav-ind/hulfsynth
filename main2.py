@@ -66,7 +66,7 @@ if __name__ == '__main__':
     config["l1"] = 10 #wandb.config.l1
     config["l3"] = 2 #wandb.config.l3
     config["l4"] = 0.04
-    config["l5"] = 0.05
+    config["l5"] = 0.1
 
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
     gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
