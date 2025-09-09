@@ -4,6 +4,7 @@ method: random
 metric:
   goal: maximize
   name: RQS
+parameters:
   config_choice:
     values:
       - {l1: 100, l3: 1, l4: 0.1, l4: 0.1, epochs: 10}
