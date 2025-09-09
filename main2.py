@@ -64,8 +64,8 @@ if __name__ == '__main__':
     config = copy.deepcopy(default_config)
     config["in_features"] = 3
     config["l1"] = 100 #wandb.config.l1
-    config["l3"] = 8 #wandb.config.l3
-    config["l4"] = 0.7
+    config["l3"] = 5 #wandb.config.l3
+    config["l4"] = 0.35
     config["l5"] = 0.5
 
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
