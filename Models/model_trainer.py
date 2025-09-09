@@ -123,7 +123,7 @@ class ModelTrainerModule(pl.LightningModule):
         rqs_ = seg_score + img_score
 
 
-        return rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_
+        return rqs_, dice2, iou_, ssim_, psnr_, normalized_psnr_
 
 
 
