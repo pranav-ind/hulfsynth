@@ -1,0 +1,60 @@
+There is a wandb run already in progress and newly created instances of `WandbLogger` will reuse this run. If this is not desired, call `wandb.finish()` before instantiating `WandbLogger`.
+[34m[1mwandb[0m: logging graph, to disable use `wandb.watch(log_graph=False)`
+💡 Tip: For seamless cloud uploads and versioning, try installing [litmodels](https://pypi.org/project/litmodels/) to enable LitModelCheckpoint, which syncs automatically with the Lightning model registry.
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+HPU available: False, using: 0 HPUs
+
+  | Name    | Type       | Params | Mode
+-----------------------------------------------
+0 | network | MLP        | 265 K  | train
+1 | dice    | DiceCELoss | 0      | train
+-----------------------------------------------
+265 K     Trainable params
+0         Non-trainable params
+265 K     Total params
+1.062     Total estimated model params size (MB)
+20        Modules in train mode
+0         Modules in eval mode
+The 'train_dataloader' does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` to `num_workers=9` in the `DataLoader` to improve performance.
+The number of training batches (1) is smaller than the logging interval Trainer(log_every_n_steps=50). Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
+Epoch 0:   0%|                                                                                                                   | 0/1 [00:00<?, ?it/s]loss:  9.515610694885254 2.0513157844543457 7.453273773193359 0.001639023539610207 0.009382444433867931
+sampling at resolution:  torch.Size([174, 192, 192])
+psnr_hf:  tensor([[14.4692]]) ssim_hf:  tensor([[0.0612]])
+diff:  tensor(0.) tensor(0.)
+pred seg:  torch.Size([1, 4, 174, 192, 192]) torch.Size([4, 87, 96, 192])
+dice_lf:  tensor(0.3236)
+Epoch 1:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=91ma]loss:  8.676985740661621 2.042243003845215 6.622102737426758 0.001880083465948701 0.010760044679045677
+sampling at resolution:  torch.Size([174, 192, 192])
+psnr_hf:  tensor([[13.1914]]) ssim_hf:  tensor([[0.0413]])
+diff:  tensor(-0.1633) tensor(-1.1894e-10)
+pred seg:  torch.Size([1, 4, 174, 192, 192]) torch.Size([4, 87, 96, 192])
+dice_lf:  tensor(0.3236)
+Epoch 2:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=91ma]loss:  7.9608330726623535 2.0273919105529785 5.9157185554504395 0.004476639442145824 0.013246193528175354
+sampling at resolution:  torch.Size([174, 192, 192])
+psnr_hf:  tensor([[14.8968]]) ssim_hf:  tensor([[0.0648]])
+diff:  tensor(-0.0583) tensor(3.4256e-10)
+pred seg:  torch.Size([1, 4, 174, 192, 192]) torch.Size([4, 87, 96, 192])
+dice_lf:  tensor(0.3236)
+Epoch 3:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=91ma]loss:  9.892006874084473 2.016848087310791 7.84987735748291 0.008268605917692184 0.017012495547533035
+sampling at resolution:  torch.Size([174, 192, 192])
+psnr_hf:  tensor([[12.9156]]) ssim_hf:  tensor([[0.0546]])
+diff:  tensor(-0.0744) tensor(-1.5225e-10)
+pred seg:  torch.Size([1, 4, 174, 192, 192]) torch.Size([4, 87, 96, 192])
+dice_lf:  tensor(0.3236)
+Epoch 4:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=91ma]loss:  9.040595054626465 2.026355028152466 6.96944522857666 0.008454483933746815 0.03634050488471985
+sampling at resolution:  torch.Size([174, 192, 192])
+psnr_hf:  tensor([[14.4883]]) ssim_hf:  tensor([[0.3570]])
+diff:  tensor(0.0061) tensor(-3.8062e-10)
+pred seg:  torch.Size([1, 4, 174, 192, 192]) torch.Size([4, 87, 96, 192])
+dice_lf:  tensor(0.3236)
+Epoch 5:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=91ma]loss:  9.133204460144043 2.0046606063842773 7.088361740112305 0.008997024968266487 0.031185513362288475
+sampling at resolution:  torch.Size([174, 192, 192])
+psnr_hf:  tensor([[14.3127]]) ssim_hf:  tensor([[0.1556]])
+diff:  tensor(-0.0184) tensor(3.0449e-10)
+pred seg:  torch.Size([1, 4, 174, 192, 192]) torch.Size([4, 87, 96, 192])
+dice_lf:  tensor(0.3236)
+Epoch 6:   0%|                                                                                                       | 0/1 [00:00<?, ?it/s, v_num=91ma]loss:  7.6473002433776855 1.9964792728424072 5.602532386779785 0.011126812547445297 0.03716202452778816
+sampling at resolution:  torch.Size([174, 192, 192])
+
+Detected KeyboardInterrupt, attempting graceful shutdown ...

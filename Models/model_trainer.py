@@ -56,10 +56,12 @@ class ModelTrainerModule(pl.LightningModule):
 
 
         self.dice_score = monai.metrics.DiceMetric()
+        self.dice2 = monai.metrics.GeneralizedDiceScore()
         self.iou_score = monai.metrics.MeanIoU()
         self.psnr_value = monai.metrics.PSNRMetric(max_val = 1.0) #expects shape: BCHWD
         self.ssim_value = monai.metrics.regression.SSIMMetric(spatial_dims=3, data_range=1.0) #expects shape: BCHWD
-
+        self.temp_list1 = []
+        self.temp_list2 = []
         
 
     def configure_optimizers(self):
@@ -81,7 +83,7 @@ class ModelTrainerModule(pl.LightningModule):
         print("loss: ", loss.item(), dice_loss.item(), mse_loss.item(), tv_loss_img.item(), tv_loss_seg.item())        
         return loss, mse_loss, dice_loss, tv_loss_img, tv_loss_seg
 
-    def compute_rqs(self, pred_im, pred_seg):
+    def compute_rqs(self, pred_hf_im, pred_hf_seg):
         """
         - Computes Reconstruction Quality Score (rqs): a fusion metric of dice score, IoU score, SSIM and PSNR. 
         - This score is calculated for predicted against observed ULF (not High-Field)
@@ -89,7 +91,7 @@ class ModelTrainerModule(pl.LightningModule):
         - Note: this measure is not a final metric that validates our approach. We use the same metrics (dice/iou and ssim/psnr) to measure predicted HF data and observed HF data
         """
         # pred_hf_im, pred_hf_seg  = self.sample_at_resolution(self.hf_gt_im.shape[:-1]) # shape(4 *H_lf, *W_lf, *D)
-        pred_hf_im, pred_hf_seg  = pred_im, pred_seg
+        # pred_hf_im, pred_hf_seg  = pred_im, pred_seg
         
         #lf_img
         pred_lf_im = (F.interpolate(pred_hf_im.permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0)).permute(1,2,0)
@@ -102,14 +104,18 @@ class ModelTrainerModule(pl.LightningModule):
         #hf_seg
         pred_hf_seg = [pred_hf_seg[i].reshape(self.hf_gt_im.shape[:-1]) for i in range(pred_hf_seg.shape[0])]
         pred_hf_seg = torch.stack(pred_hf_seg,axis = 0).unsqueeze(0) # shape(1,4 *H, *W, *D)
-        
+        print("pred seg: ", pred_hf_seg.shape, pred_lf_seg.shape)
 
         # RQS = (0.3 * dice) + (0.2 * iou) + (0.3 * ssim) + (0.2 * psnr) -> slightly more biased towards structural indices (dice/ssim)
         psnr_ = self.psnr_value(pred_lf_im.unsqueeze(0).to('cpu'), self.lf_gt_im.permute(3,0,1,2).to('cpu'))
         ssim_ = self.ssim_value(pred_lf_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.lf_gt_im.permute(3,0,1,2).unsqueeze(0).to('cpu'))
-        dice_ = self.dice_score(pred_lf_seg.unsqueeze(0).to('cpu'), self.lf_gt_seg.to('cpu')).mean()
-        print("dice_lf: ", dice_)
-        iou_ = self.iou_score(pred_lf_seg.unsqueeze(0).to('cpu'), self.lf_gt_seg.to('cpu')).mean()
+        dice_ = self.dice_score(pred_lf_seg.unsqueeze(0).to('cpu'), self.lf_gt_seg.to('cpu'))
+        iou_ = self.iou_score(pred_lf_seg.unsqueeze(0).to('cpu'), self.lf_gt_seg.to('cpu'))
+
+        dice2 = self.dice2(pred_lf_seg.unsqueeze(0).to('cpu'), self.lf_gt_seg.to('cpu'))
+        print("dice_lf: ", dice_, "iou_lf: ", iou_, "dice2: ", dice2)
+        dice_ = dice_.mean()
+        iou_ = iou_.mean()
         normalized_psnr_ = normalize_psnr(psnr_) #normalizing to [0, 1] i.e., maps : [15.0, 30.0] -> [0, 1]
         
         seg_score = (0.3 * dice_) + (0.2 * iou_) #calculates how the structural fidelity of ULF segmentations
@@ -144,13 +150,18 @@ class ModelTrainerModule(pl.LightningModule):
 
         
         #HF metrics over training 
-        if (self.current_epoch % 50 )== 0: #logging every epoch is expensive ; therefore logging in intervals of 50
+        # if (self.current_epoch % 50 )== 0: #logging every epoch is expensive ; therefore logging in intervals of 50
+        if(True):
             pred_im, pred_seg  = self.sample_at_resolution(self.hf_gt_im.shape[:-1]) #TODO: move HF validation metrics to another method
             psnr_hf =  self.psnr_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
             ssim_hf =  self.ssim_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
 
             print("psnr_hf: ", psnr_hf, "ssim_hf: ", ssim_hf)
             
+            
+            self.temp_list1.append(pred_im)
+            self.temp_list2.append(pred_seg)
+            print('diff: ', (self.temp_list1[0] - pred_im).mean(), (self.temp_list2[0] - pred_seg).mean())
             
             #RQS: LF metrics over training
             rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_ = self.compute_rqs(pred_im, pred_seg)
