@@ -118,7 +118,7 @@ class ModelTrainerModule(pl.LightningModule):
         iou_ = iou_.mean()
         normalized_psnr_ = normalize_psnr(psnr_) #normalizing to [0, 1] i.e., maps : [15.0, 30.0] -> [0, 1]
         
-        seg_score = (0.3 * dice_) + (0.2 * iou_) #calculates how the structural fidelity of ULF segmentations
+        seg_score = (0.3 * dice2) + (0.2 * iou_) #calculates how the structural fidelity of ULF segmentations
         img_score = (0.3 * ssim_) + (0.2 * normalized_psnr_) #calculates image metrics of ULF predictions
         rqs_ = seg_score + img_score
 
@@ -150,8 +150,7 @@ class ModelTrainerModule(pl.LightningModule):
 
         
         #HF metrics over training 
-        # if (self.current_epoch % 50 )== 0: #logging every epoch is expensive ; therefore logging in intervals of 50
-        if(True):
+        if (self.current_epoch % 50 )== 0: #logging every epoch is expensive ; therefore logging in intervals of 50
             pred_im, pred_seg  = self.sample_at_resolution(self.hf_gt_im.shape[:-1]) #TODO: move HF validation metrics to another method
             psnr_hf =  self.psnr_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
             ssim_hf =  self.ssim_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
