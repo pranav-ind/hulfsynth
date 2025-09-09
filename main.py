@@ -65,14 +65,14 @@ def wand_train():
         config_["in_features"] = 3
         # config["total_steps"] = wandb.config.epochs
         
-        config_["l1"] = wandb.config.l1
-        config_["l3"] = wandb.config.l3
-        config_["l4"] = wandb.config.l4
-        config_["l5"] = wandb.config.l5
+        config_["l1"] = wandb.config.config_choice['l1']
+        config_["l3"] = wandb.config.config_choice['l3']
+        config_["l4"] = wandb.config.config_choice['l4']
+        config_["l5"] = wandb.config.config_choice['l5']
         
         HIDDEN_SIZE = 256 #best_config; 256/5/3000
         NUM_LAYERS = 5
-        TRAINING_EPOCHS = wandb.config.epochs
+        TRAINING_EPOCHS = wandb.config.config_choice['epochs']
         LEARNING_RATE = 5e-4
         SIREN_FACTOR = 30.0 
 
