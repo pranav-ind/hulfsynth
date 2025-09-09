@@ -73,7 +73,7 @@ def wand_train():
         HIDDEN_SIZE = wandb.config.config_choice['hidden_size'] #best_config; 256/5/3000
         NUM_LAYERS = wandb.config.config_choice['num_layers']
         TRAINING_EPOCHS = wandb.config.config_choice['epochs']
-        LEARNING_RATE = wandb.config.config_choice['lr']
+        LEARNING_RATE = wandb.config.config_choice['learning_rate']
         SIREN_FACTOR = 30.0 
 
         hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config_) #uncomment
