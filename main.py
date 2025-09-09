@@ -70,10 +70,10 @@ def wand_train():
         config_["l4"] = wandb.config.config_choice['l4']
         config_["l5"] = wandb.config.config_choice['l5']
         
-        HIDDEN_SIZE = 256 #best_config; 256/5/3000
-        NUM_LAYERS = 5
+        HIDDEN_SIZE = wandb.config.config_choice['hidden_size'] #best_config; 256/5/3000
+        NUM_LAYERS = wandb.config.config_choice['num_layers']
         TRAINING_EPOCHS = wandb.config.config_choice['epochs']
-        LEARNING_RATE = 5e-4
+        LEARNING_RATE = wandb.config.config_choice['lr']
         SIREN_FACTOR = 30.0 
 
         hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config_) #uncomment
@@ -166,4 +166,4 @@ if __name__ == '__main__':
         sweep_config = yaml.safe_load(file)
     pprint.pprint(sweep_config)
     sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth")
-    wandb.agent(sweep_id, function=wand_train, count=3)
+    wandb.agent(sweep_id, function=wand_train, count=6)

@@ -7,6 +7,9 @@ metric:
 parameters:
   config_choice:
     values:
-      - {l1: 100, l3: 1, l4: 0.1, l5: 0.1, epochs: 10}
-      - {l1: 100, l3: 1, l4: 0.025, l5: 0.1, epochs: 10}
-      - {l1: 100, l3: 1, l4: 0.05, l5: 0.1, epochs: 10}
+      - {l1: 100, l3: 1, l4: 0.1, l5: 0.1, epochs: 10000, hidden_size: 128, num_layers: 5, lr: 5e-5}
+      - {l1: 100, l3: 1, l4: 0.1, l5: 0.1, epochs: 10000, hidden_size: 128, num_layers: 7, lr: 5e-5}
+      - {l1: 100, l3: 1, l4: 0.1, l5: 0.1, epochs: 5000, hidden_size: 256, num_layers: 5, lr: 5e-4}
+      - {l1: 100, l3: 1, l4: 0.025, l5: 0.1, epochs: 10000, hidden_size: 128, num_layers: 5, lr: 5e-4}
+      - {l1: 100, l3: 1, l4: 0.05, l5: 0.1, epochs: 10000, hidden_size: 128, num_layers: 7, lr: 5e-5} 
+      - {l1: 100, l3: 10, l4: 0.05, l5: 0.1, epochs: 10000, hidden_size: 128, num_layers: 7, lr: 5e-4} 
