@@ -1,0 +1,11 @@
+program: main.py
+name: sweeptest
+method: random
+metric:
+  goal: maximize
+  name: RQS
+  config_choice:
+    values:
+      - {l1: 100, l3: 1, l4: 0.1, l4: 0.1, epochs: 10}
+      - {l1: 100, l3: 1, l4: 0.025, l4: 0.1, epochs: 10}
+      - {l1: 100, l3: 1, l4: 0.05, l4: 0.1, epochs: 10}
