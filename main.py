@@ -166,4 +166,4 @@ if __name__ == '__main__':
         sweep_config = yaml.safe_load(file)
     pprint.pprint(sweep_config)
     sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth")
-    wandb.agent(sweep_id, function=wand_train, count=50)
+    wandb.agent(sweep_id, function=wand_train, count=3)
