@@ -122,7 +122,7 @@ class ModelTrainerModule(pl.LightningModule):
         img_score = (0.3 * ssim_) + (0.2 * normalized_psnr_) #calculates image metrics of ULF predictions
         rqs_ = seg_score + img_score
 
-
+        # return rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_
         return rqs_, dice2, iou_, ssim_, psnr_, normalized_psnr_
 
 
