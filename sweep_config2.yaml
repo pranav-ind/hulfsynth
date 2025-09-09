@@ -1,5 +1,5 @@
 program: main.py
-name: sweeptest
+name: sweeptest123
 method: grid
 metric:
   goal: maximize
