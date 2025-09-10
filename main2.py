@@ -65,7 +65,7 @@ if __name__ == '__main__':
     config["in_features"] = 3
     config["l1"] = 100 #wandb.config.l1
     config["l3"] = 1 #wandb.config.l3
-    config["l4"] = 0.1
+    config["l4"] = 0.025
     config["l5"] = 0.1
 
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
@@ -80,9 +80,9 @@ if __name__ == '__main__':
     dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
     dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
 
-    HIDDEN_SIZE = 256 #best_config; 256/5/3000
+    HIDDEN_SIZE = 128 #best_config; 256/5/3000
     NUM_LAYERS = 5
-    TRAINING_EPOCHS = 5000
+    TRAINING_EPOCHS = 10000
     LEARNING_RATE = 5e-5
     SIREN_FACTOR = 30.0 
     siren_inr = MLP(in_size=3,
