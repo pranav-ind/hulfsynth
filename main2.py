@@ -81,9 +81,9 @@ if __name__ == '__main__':
     dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
 
     HIDDEN_SIZE = 128 #best_config; 256/5/3000
-    NUM_LAYERS = 5
+    NUM_LAYERS = 3
     TRAINING_EPOCHS = 10000
-    LEARNING_RATE = 5e-5
+    LEARNING_RATE = 5e-4
     SIREN_FACTOR = 30.0 
     siren_inr = MLP(in_size=3,
                     out_size=5,
