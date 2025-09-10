@@ -9,7 +9,7 @@ from typing import Tuple, List, Optional
 import matplotlib.pyplot as plt
 from datetime import datetime
 import copy
-
+import gc
 
 
 import lightning as pl
@@ -112,6 +112,9 @@ def wand_train():
         wandb.save(model_saving_path)
         run.log_model(path=model_saving_path, name="model")
         run.finish()
+        del dataloader, trainer, siren_module, dummy_input
+        torch.cuda.empty_cache()
+        gc.collect()
 
 
 '''
@@ -156,6 +159,10 @@ sweep_config = {
 '''
 
 import yaml
+import os
+import subprocess
+import re
+
 if __name__ == '__main__':
     wandb.login()
     
@@ -164,4 +171,40 @@ if __name__ == '__main__':
         sweep_config = yaml.safe_load(file)
     pprint.pprint(sweep_config)
     sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth")
-    wandb.agent(sweep_id, function=wand_train, count=6)
+    # wandb.agent(sweep_id, function=wand_train, count=6)
+
+
+    # Step 1: Create sweep from yaml
+    result = subprocess.run(
+        ["wandb", "sweep", "sweep_config.yaml"],
+        stdout=subprocess.PIPE,
+        text=True
+    )
+
+    # Extract SWEEP_ID from output
+    match = re.search(r"wandb agent (\S+)", result.stdout)
+    if not match:
+        raise RuntimeError("Could not extract SWEEP_ID from wandb sweep output")
+    SWEEP_ID = match.group(1)
+
+    print(f"Created sweep: {sweep_id}")
+
+    # Step 2: Run multiple jobs on different GPUs
+    total_runs = 6
+    processes = []
+    for i in range(total_runs):
+        gpu_id = 0 if i < 3 else 1
+        
+        env = os.environ.copy()
+        env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+        
+        print(f"Starting run {i+1}/{total_runs} on GPU {gpu_id}")
+        
+        p = subprocess.Popen(
+            ["wandb", "agent", "--count", "1", sweep_id],
+            env=env
+        )
+        processes.append(p)
+
+    for p in processes:
+        p.wait()
