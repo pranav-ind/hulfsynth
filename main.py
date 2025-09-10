@@ -185,7 +185,7 @@ if __name__ == '__main__':
     match = re.search(r"wandb agent (\S+)", result.stdout)
     if not match:
         raise RuntimeError("Could not extract SWEEP_ID from wandb sweep output")
-    SWEEP_ID = match.group(1)
+    sweep_id = match.group(1)
 
     print(f"Created sweep: {sweep_id}")
 
