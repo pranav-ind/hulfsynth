@@ -82,7 +82,7 @@ class ModelTrainerModule(pl.LightningModule):
         self.num_classes = 4
         self.config = config
         self.phi = ContrastModulation()
-        self.M = [0.5, 0.5, 0.5]
+        self.M = [1, 1, 1]
 
         self.dice_score = monai.metrics.DiceMetric()
         self.dice2 = monai.metrics.GeneralizedDiceScore()
