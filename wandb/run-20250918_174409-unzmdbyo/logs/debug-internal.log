@@ -1,0 +1,23 @@
+{"time":"2025-09-18T17:44:09.715412+05:30","level":"INFO","msg":"stream: starting","core version":"0.20.1","symlink path":"/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/wandb/run-20250918_174409-unzmdbyo/logs/debug-core.log"}
+{"time":"2025-09-18T17:44:10.366333+05:30","level":"INFO","msg":"stream: created new stream","id":"unzmdbyo"}
+{"time":"2025-09-18T17:44:10.366396+05:30","level":"INFO","msg":"stream: started","id":"unzmdbyo"}
+{"time":"2025-09-18T17:44:10.366427+05:30","level":"INFO","msg":"writer: Do: started","stream_id":"unzmdbyo"}
+{"time":"2025-09-18T17:44:10.366466+05:30","level":"INFO","msg":"handler: started","stream_id":"unzmdbyo"}
+{"time":"2025-09-18T17:44:10.366435+05:30","level":"INFO","msg":"sender: started","stream_id":"unzmdbyo"}
+{"time":"2025-09-18T17:44:10.735565+05:30","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-09-18T17:45:03.120825+05:30","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-09-18T17:45:03.121397+05:30","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-09-18T17:45:04.138018+05:30","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading wandb/model.onnx","runtime_seconds":1.225558291,"progress":"266.1KB/266.1KB"},{"desc":"uploading artifact model","runtime_seconds":1.021699375},{"desc":"uploading config.yaml","runtime_seconds":0.365585917,"progress":"697B/697B"}],"total_operations":3}}
+{"time":"2025-09-18T17:45:34.167397+05:30","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/graphql\": context deadline exceeded (Client.Timeout exceeded while awaiting headers)"}
+{"time":"2025-09-18T17:45:52.245436+05:30","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/graphql\": read tcp 192.168.0.100:64866->35.186.228.49:443: read: can't assign requested address"}
+{"time":"2025-09-18T17:46:04.349971+05:30","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading artifact model","runtime_seconds":61.233666208,"error_status":"retrying: Post \"https://api.wandb.ai/graphql\": read tcp 192.168.0.100:64866->35.186.228.49:443: read: can't assign requested address"},{"desc":"uploading history steps 0-0, summary, console lines 27-36","runtime_seconds":52.895490625}],"total_operations":2}}
+{"time":"2025-09-18T17:46:27.173115+05:30","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/graphql\": net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers)"}
+{"time":"2025-09-18T17:46:27.183383+05:30","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/pi58-sussex/hulfsynth/unzmdbyo/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2025-09-18T17:46:59.650149+05:30","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/pi58-sussex/hulfsynth/unzmdbyo/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2025-09-18T17:46:59.650105+05:30","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/graphql\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2025-09-18T17:47:04.535816+05:30","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading artifact model","runtime_seconds":121.419511208,"error_status":"retrying: Post \"https://api.wandb.ai/graphql\": dial tcp: lookup api.wandb.ai: no such host"},{"desc":"uploading data","runtime_seconds":45.58099225,"error_status":"retrying: Post \"https://api.wandb.ai/files/pi58-sussex/hulfsynth/unzmdbyo/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}],"total_operations":2}}
+{"time":"2025-09-18T17:47:33.979308+05:30","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/graphql\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2025-09-18T17:47:33.979317+05:30","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/pi58-sussex/hulfsynth/unzmdbyo/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2025-09-18T17:48:04.771082+05:30","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading artifact model","runtime_seconds":181.654792458,"error_status":"retrying: Post \"https://api.wandb.ai/graphql\": dial tcp: lookup api.wandb.ai: no such host"}],"total_operations":1}}
+{"time":"2025-09-18T17:48:08.787708+05:30","level":"WARN","msg":"sender: received Exit record more than once, ignoring"}
+{"time":"2025-09-18T17:48:08.787721+05:30","level":"INFO","msg":"stream: closing","id":"unzmdbyo"}

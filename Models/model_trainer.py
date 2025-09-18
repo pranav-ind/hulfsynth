@@ -23,6 +23,34 @@ from Models.models import Siren, Finer
 from Models.model import MLP, initialize_siren_weights, SineLayer, ReLULayer
 from Utils.utils import psnr, get_device, norm, normalize_psnr
 
+
+
+class ContrastModulation:
+  #2D
+  def __init__(self, ):
+    self.hf_chunk_size = (96, 96, 4)
+    self.chunk_size_lf = (96//2, 96//2, 4)
+    self.hf_size = (172, 192, 192)
+    self.lf_size = (172//2, 192//2, 192)
+
+  
+  def forward(self, output_image, output_seg, M):
+    hf_chunk_size = self.hf_chunk_size #= config["size"]
+      
+    #Weighted Sum of Segmentation Probabilities and Image Intensities
+
+    imgs_list = [F.interpolate((output_seg[:,i].reshape(hf_chunk_size) * output_image.reshape(hf_chunk_size)).permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0).permute(1,2,0) for i in range(output_seg.shape[-1])]
+    wm_img = imgs_list[0] * M[0]
+    gm_img = imgs_list[1] * M[1]
+    csf_img = imgs_list[2] * M[2]
+    bg_img = imgs_list[3]
+
+
+    # Recombination of downsampled tissues 
+    lf_img = csf_img + gm_img + wm_img + bg_img
+    return lf_img.flatten().unsqueeze(0)
+
+
 class ModelTrainerModule(pl.LightningModule):
     def __init__(self,
                  network: MLP,
@@ -53,7 +81,8 @@ class ModelTrainerModule(pl.LightningModule):
         self.lf_chunk_size = (96//2,96//2,4)
         self.num_classes = 4
         self.config = config
-
+        self.phi = ContrastModulation()
+        self.M = [0.5, 0.5, 0.5]
 
         self.dice_score = monai.metrics.DiceMetric()
         self.dice2 = monai.metrics.GeneralizedDiceScore()
@@ -116,6 +145,7 @@ class ModelTrainerModule(pl.LightningModule):
         print("dice_lf: ", dice_, "iou_lf: ", iou_, "dice2: ", dice2)
         dice_ = dice_.mean()
         iou_ = iou_.mean()
+        dice2 = dice2.mean()
         normalized_psnr_ = normalize_psnr(psnr_) #normalizing to [0, 1] i.e., maps : [15.0, 30.0] -> [0, 1]
         
         seg_score = (0.3 * dice2) + (0.2 * iou_) #calculates how the structural fidelity of ULF segmentations
@@ -130,22 +160,24 @@ class ModelTrainerModule(pl.LightningModule):
 
 
     def training_step(self, batch, batch_idx):
-        coords, values, values_seg = batch
+        coords, lf_batch, lf_batch_seg = batch
         coords = coords.view(-1, coords.shape[-1]) #coord input of each batch
-        values = values.view(-1, values.shape[-1]) #lf_gt of each batch
-        # print("gt_batch shapes: ",coords.shape, values.shape, values_seg.shape)
+        lf_batch = lf_batch.view(-1, lf_batch.shape[-1]) #lf_gt of each batch
+        print("gt_batch shapes: ",coords.shape, lf_batch.shape, lf_batch_seg.shape)
         
-        output_image,output_image_pre, output_seg, output_seg_pre = self.forward(coords)
-        outputs_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
+        output_image, output_image_pre, output_seg, output_seg_pre = self.forward(coords)
+        # output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
+        output_image_lf = self.phi.forward(output_image, output_seg, self.M)
         
         pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0).squeeze(0)).reshape(self.lf_chunk_size) for i in range(output_seg.shape[-1])] #downsampling pred_seg
         pred_seg = torch.stack(pred_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
-        values_seg = [values_seg[:,i].reshape(48,48,4) for i in range(values_seg[0].shape[0])]
-        values_seg = torch.stack(values_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
-
+        lf_batch_seg = [lf_batch_seg[:,i].reshape(48,48,4) for i in range(lf_batch_seg[0].shape[0])]
+        lf_batch_seg = torch.stack(lf_batch_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
+        
+        print('Outputs: ', output_image.shape, output_seg.shape, output_image_lf.shape, lf_batch_seg.shape)
 
         #Compute Losses
-        loss, mse_loss, dice_loss, tv_loss_img, tv_loss_seg = self.compute_loss(outputs_lf, values, output_image_pre, pred_seg, values_seg, output_seg_pre)
+        loss, mse_loss, dice_loss, tv_loss_img, tv_loss_seg = self.compute_loss(output_image_lf, lf_batch, output_image_pre, pred_seg, lf_batch_seg, output_seg_pre)
 
 
         

@@ -1,0 +1,16 @@
+{"time":"2025-09-18T19:26:53.117282+05:30","level":"INFO","msg":"stream: starting","core version":"0.20.1","symlink path":"/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/wandb/run-20250918_192652-l1rlq9n3/logs/debug-core.log"}
+{"time":"2025-09-18T19:26:53.937498+05:30","level":"INFO","msg":"stream: created new stream","id":"l1rlq9n3"}
+{"time":"2025-09-18T19:26:53.937555+05:30","level":"INFO","msg":"stream: started","id":"l1rlq9n3"}
+{"time":"2025-09-18T19:26:53.937582+05:30","level":"INFO","msg":"writer: Do: started","stream_id":"l1rlq9n3"}
+{"time":"2025-09-18T19:26:53.937599+05:30","level":"INFO","msg":"handler: started","stream_id":"l1rlq9n3"}
+{"time":"2025-09-18T19:26:53.937658+05:30","level":"INFO","msg":"sender: started","stream_id":"l1rlq9n3"}
+{"time":"2025-09-18T19:26:56.936073+05:30","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-09-18T19:27:54.592112+05:30","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-09-18T19:27:54.592568+05:30","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-09-18T19:27:55.605706+05:30","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading wandb/model.onnx","runtime_seconds":1.240804375,"progress":"266.1KB/266.1KB"},{"desc":"uploading artifact model","runtime_seconds":1.01682225},{"desc":"uploading config.yaml","runtime_seconds":0.328419583,"progress":"697B/697B"}],"total_operations":3}}
+{"time":"2025-09-18T19:28:02.366651+05:30","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-09-18T19:28:02.772362+05:30","level":"INFO","msg":"stream: closing","id":"l1rlq9n3"}
+{"time":"2025-09-18T19:28:02.772424+05:30","level":"INFO","msg":"handler: closed","stream_id":"l1rlq9n3"}
+{"time":"2025-09-18T19:28:02.772667+05:30","level":"INFO","msg":"writer: Close: closed","stream_id":"l1rlq9n3"}
+{"time":"2025-09-18T19:28:02.772697+05:30","level":"INFO","msg":"sender: closed","stream_id":"l1rlq9n3"}
+{"time":"2025-09-18T19:28:02.773674+05:30","level":"INFO","msg":"stream: closed","id":"l1rlq9n3"}

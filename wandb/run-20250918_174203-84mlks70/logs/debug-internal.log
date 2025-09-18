@@ -1,0 +1,15 @@
+{"time":"2025-09-18T17:42:04.068743+05:30","level":"INFO","msg":"stream: starting","core version":"0.20.1","symlink path":"/Users/pi58/Library/CloudStorage/Box-Box/PhD/MPhil/Projects/Hulf_Synth/wandb/run-20250918_174203-84mlks70/logs/debug-core.log"}
+{"time":"2025-09-18T17:42:04.843699+05:30","level":"INFO","msg":"stream: created new stream","id":"84mlks70"}
+{"time":"2025-09-18T17:42:04.843762+05:30","level":"INFO","msg":"stream: started","id":"84mlks70"}
+{"time":"2025-09-18T17:42:04.843766+05:30","level":"INFO","msg":"handler: started","stream_id":"84mlks70"}
+{"time":"2025-09-18T17:42:04.843811+05:30","level":"INFO","msg":"sender: started","stream_id":"84mlks70"}
+{"time":"2025-09-18T17:42:04.843846+05:30","level":"INFO","msg":"writer: Do: started","stream_id":"84mlks70"}
+{"time":"2025-09-18T17:42:05.2497+05:30","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-09-18T17:42:58.731267+05:30","level":"INFO","msg":"stream: closing","id":"84mlks70"}
+{"time":"2025-09-18T17:42:58.731311+05:30","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-09-18T17:42:58.731915+05:30","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-09-18T17:42:59.604899+05:30","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-09-18T17:43:00.026279+05:30","level":"INFO","msg":"handler: closed","stream_id":"84mlks70"}
+{"time":"2025-09-18T17:43:00.02689+05:30","level":"INFO","msg":"writer: Close: closed","stream_id":"84mlks70"}
+{"time":"2025-09-18T17:43:00.026935+05:30","level":"INFO","msg":"sender: closed","stream_id":"84mlks70"}
+{"time":"2025-09-18T17:43:00.02749+05:30","level":"INFO","msg":"stream: closed","id":"84mlks70"}
