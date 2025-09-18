@@ -133,7 +133,7 @@ class ModelTrainerModule(pl.LightningModule):
         #hf_seg
         pred_hf_seg = [pred_hf_seg[i].reshape(self.hf_gt_im.shape[:-1]) for i in range(pred_hf_seg.shape[0])]
         pred_hf_seg = torch.stack(pred_hf_seg,axis = 0).unsqueeze(0) # shape(1,4 *H, *W, *D)
-        print("pred seg: ", pred_hf_seg.shape, pred_lf_seg.shape)
+        # print("pred seg: ", pred_hf_seg.shape, pred_lf_seg.shape)
 
         # RQS = (0.3 * dice) + (0.2 * iou) + (0.3 * ssim) + (0.2 * psnr) -> slightly more biased towards structural indices (dice/ssim)
         psnr_ = self.psnr_value(pred_lf_im.unsqueeze(0).to('cpu'), self.lf_gt_im.permute(3,0,1,2).to('cpu'))
@@ -163,7 +163,7 @@ class ModelTrainerModule(pl.LightningModule):
         coords, lf_batch, lf_batch_seg = batch
         coords = coords.view(-1, coords.shape[-1]) #coord input of each batch
         lf_batch = lf_batch.view(-1, lf_batch.shape[-1]) #lf_gt of each batch
-        print("gt_batch shapes: ",coords.shape, lf_batch.shape, lf_batch_seg.shape)
+        # print("gt_batch shapes: ",coords.shape, lf_batch.shape, lf_batch_seg.shape)
         
         output_image, output_image_pre, output_seg, output_seg_pre = self.forward(coords)
         # output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
@@ -174,7 +174,7 @@ class ModelTrainerModule(pl.LightningModule):
         lf_batch_seg = [lf_batch_seg[:,i].reshape(48,48,4) for i in range(lf_batch_seg[0].shape[0])]
         lf_batch_seg = torch.stack(lf_batch_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
         
-        print('Outputs: ', output_image.shape, output_seg.shape, output_image_lf.shape, lf_batch_seg.shape)
+        # print('Outputs: ', output_image.shape, output_seg.shape, output_image_lf.shape, lf_batch_seg.shape)
 
         #Compute Losses
         loss, mse_loss, dice_loss, tv_loss_img, tv_loss_seg = self.compute_loss(output_image_lf, lf_batch, output_image_pre, pred_seg, lf_batch_seg, output_seg_pre)
@@ -192,7 +192,7 @@ class ModelTrainerModule(pl.LightningModule):
             
             self.temp_list1.append(pred_im)
             self.temp_list2.append(pred_seg)
-            print('diff: ', (self.temp_list1[0] - pred_im).mean(), (self.temp_list2[0] - pred_seg).mean())
+            # print('diff: ', (self.temp_list1[0] - pred_im).mean(), (self.temp_list2[0] - pred_seg).mean())
             
             #RQS: LF metrics over training
             rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_ = self.compute_rqs(pred_im, pred_seg)

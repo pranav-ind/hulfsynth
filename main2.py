@@ -73,7 +73,7 @@ if __name__ == '__main__':
     gt_image = gt_image.to(torch.float32)
     lf_gt = torch.tensor(norm(lf_gt)).unsqueeze(-1)
     lf_gt = lf_gt.to(torch.float32)
-    print("gt_image: ", gt_image.shape, "lf_gt: ", lf_gt.shape, "lf_gt_seg_dice: ", lf_gt_seg_dice.shape)
+    # print("gt_image: ", gt_image.shape, "lf_gt: ", lf_gt.shape, "lf_gt_seg_dice: ", lf_gt_seg_dice.shape)
     print('gt_image, lf_gt loaded')
 
 
