@@ -166,8 +166,8 @@ class ModelTrainerModule(pl.LightningModule):
         # print("gt_batch shapes: ",coords.shape, lf_batch.shape, lf_batch_seg.shape)
         
         output_image, output_image_pre, output_seg, output_seg_pre = self.forward(coords)
-        # output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
-        output_image_lf = self.phi.forward(output_image, output_seg, self.M)
+        output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
+        # output_image_lf = self.phi.forward(output_image, output_seg, self.M)
         
         pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0).squeeze(0)).reshape(self.lf_chunk_size) for i in range(output_seg.shape[-1])] #downsampling pred_seg
         pred_seg = torch.stack(pred_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
