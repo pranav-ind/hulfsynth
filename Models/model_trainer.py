@@ -43,10 +43,10 @@ class ContrastModulation:
     output_image = output_image.to('cpu')
     output_seg = output_seg.to('cpu')
 
-    bg_img = (imgs_list[0])
-    wm_img = (imgs_list[1]) * M[0]
-    gm_img = (imgs_list[2]) * M[1]
-    csf_img = (imgs_list[3]) * M[2] 
+    bg_img = norm(imgs_list[0])
+    wm_img = norm(imgs_list[1]) * M[0]
+    gm_img = norm(imgs_list[2]) * M[1]
+    csf_img = norm(imgs_list[3]) * M[2] 
     
 
     del imgs_list
@@ -201,7 +201,7 @@ class ModelTrainerModule(pl.LightningModule):
             #RQS: LF metrics over training
             rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_ = self.compute_rqs(pred_im, pred_seg)
             
-            final_img = (pred_im * pred_seg[1]) + (pred_im * pred_seg[2]) + (pred_im * pred_seg[3]) 
+            final_img = norm(pred_im * pred_seg[1]) + norm(pred_im * pred_seg[2]) + norm(pred_im * pred_seg[3]) 
             
 
 
@@ -211,7 +211,7 @@ class ModelTrainerModule(pl.LightningModule):
             "dice_lf": dice_.item(), "iou_lf": iou_.item(), "RQS": rqs_.item(),
             "total_loss": loss.item(), "mse": mse_loss.item(), "seg": dice_loss.item(), "tv_seg": tv_loss_seg.item(), "tv_img": tv_loss_img.item(), 
             "pred_img": wandb.Image(norm(pred_im[:,:,95].unsqueeze(0)), mode='L'), "pred2_seg": wandb.Image(pred_seg[2,:,:,95].unsqueeze(0), mode='L'), "pred1_seg": wandb.Image(pred_seg[1,:,:,95].unsqueeze(0), mode='L'), "pred3_seg": wandb.Image(pred_seg[3,:,:,95].unsqueeze(0), mode='L'), #adding channel dimension with unsqueeze(0)
-            "final_img": wandb.Image(norm(final_img[:,:,95].unsqueeze(0)), mode='L'),
+            "final_img": wandb.Image((final_img[:,:,95].unsqueeze(0)), mode='L'),
             "wm_img": wandb.Image(norm((pred_im * pred_seg[1])[:,:,95].unsqueeze(0)), mode='L'),
             "gm_img": wandb.Image(norm((pred_im * pred_seg[2])[:,:,95].unsqueeze(0)), mode='L'),
             "csf_img": wandb.Image(norm((pred_im * pred_seg[3])[:,:,95].unsqueeze(0)), mode='L'),
