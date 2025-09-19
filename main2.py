@@ -65,7 +65,7 @@ if __name__ == '__main__':
     config["in_features"] = 3
     config["l1"] = 100 #mse
     config["l3"] = 20 #seg
-    config["l4"] = 0.1 #tv_img
+    config["l4"] = 0.01 #tv_img
     config["l5"] = 0.1 #tv_seg
 
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
