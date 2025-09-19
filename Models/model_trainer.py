@@ -51,7 +51,7 @@ class ContrastModulation:
 
     del imgs_list
     # Recombination of downsampled tissues 
-    lf_img = csf_img + gm_img + wm_img #+ bg_img
+    lf_img = csf_img + gm_img + wm_img + bg_img
     return lf_img.flatten().unsqueeze(0)
 
 
