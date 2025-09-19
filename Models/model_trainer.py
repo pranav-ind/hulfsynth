@@ -40,12 +40,15 @@ class ContrastModulation:
     #Weighted Sum of Segmentation Probabilities and Image Intensities
 
     imgs_list = [F.interpolate((output_seg[:,i].reshape(hf_chunk_size) * output_image.reshape(hf_chunk_size)).permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0).permute(1,2,0) for i in range(output_seg.shape[-1])]
+    output_image = output_image.to('cpu')
+    output_seg = output_seg.to('cpu')
+
     wm_img = imgs_list[0] * M[0]
     gm_img = imgs_list[1] * M[1]
     csf_img = imgs_list[2] * M[2]
     bg_img = imgs_list[3]
 
-
+    del imgs_list
     # Recombination of downsampled tissues 
     lf_img = csf_img + gm_img + wm_img #+ bg_img
     return lf_img.flatten().unsqueeze(0)
@@ -166,8 +169,8 @@ class ModelTrainerModule(pl.LightningModule):
         # print("gt_batch shapes: ",coords.shape, lf_batch.shape, lf_batch_seg.shape)
         
         output_image, output_image_pre, output_seg, output_seg_pre = self.forward(coords)
-        output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
-        # output_image_lf = self.phi.forward(output_image, output_seg, self.M)
+        # output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
+        output_image_lf = self.phi.forward(output_image, output_seg, self.M)
         
         pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0).squeeze(0)).reshape(self.lf_chunk_size) for i in range(output_seg.shape[-1])] #downsampling pred_seg
         pred_seg = torch.stack(pred_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)

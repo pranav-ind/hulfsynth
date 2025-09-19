@@ -83,14 +83,14 @@ if __name__ == '__main__':
     HIDDEN_SIZE = 128 #best_config; 256/5/3000
     NUM_LAYERS = 5
     TRAINING_EPOCHS = 10000
-    LEARNING_RATE = 5e-5
-    SIREN_FACTOR = 25.0 
+    LEARNING_RATE = 5e-4
+    SIREN_FACTOR = 30.0 
     siren_inr = MLP(in_size=3,
                     out_size=5,
                     hidden_size=HIDDEN_SIZE,
                     num_layers=NUM_LAYERS,
                     layer_class=SineLayer, 
-                    siren_factor=30.0,
+                    siren_factor=SIREN_FACTOR,
                     )
     # Re-initialize the weights and make sure they are different
     initialize_siren_weights(siren_inr, SIREN_FACTOR)
