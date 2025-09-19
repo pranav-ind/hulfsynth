@@ -43,10 +43,10 @@ class ContrastModulation:
     output_image = output_image.to('cpu')
     output_seg = output_seg.to('cpu')
 
-    bg_img = norm(imgs_list[0])
-    wm_img = norm(imgs_list[1]) * M[0]
-    gm_img = norm(imgs_list[2]) * M[1]
-    csf_img = norm(imgs_list[3]) * M[2] 
+    bg_img = (imgs_list[0])
+    wm_img = (imgs_list[1]) * M[0]
+    gm_img = (imgs_list[2]) * M[1]
+    csf_img = (imgs_list[3]) * M[2] 
     
 
     del imgs_list
