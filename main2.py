@@ -64,9 +64,9 @@ if __name__ == '__main__':
     config = copy.deepcopy(default_config)
     config["in_features"] = 3
     config["l1"] = 100 #mse
-    config["l3"] = 50 #seg
+    config["l3"] = 20 #seg
     config["l4"] = 0.01 #tv_img
-    config["l5"] = 0.025 #tv_seg
+    config["l5"] = 0.1 #tv_seg
 
     hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config) #uncomment
     gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     HIDDEN_SIZE = 128 #best_config; 256/5/3000
     NUM_LAYERS = 5
     TRAINING_EPOCHS = 10000
-    LEARNING_RATE = 5e-4
+    LEARNING_RATE = 5e-5
     SIREN_FACTOR = 30.0 
     siren_inr = MLP(in_size=3,
                     out_size=5,
