@@ -43,14 +43,15 @@ class ContrastModulation:
     output_image = output_image.to('cpu')
     output_seg = output_seg.to('cpu')
 
-    wm_img = (imgs_list[0]) * M[0]
-    gm_img = (imgs_list[1]) * M[1]
-    csf_img = (imgs_list[2]) * M[2]
-    bg_img = (imgs_list[3])
+    bg_img = (imgs_list[0])
+    wm_img = (imgs_list[1]) * M[0]
+    gm_img = (imgs_list[2]) * M[1]
+    csf_img = (imgs_list[3]) * M[2] 
+    
 
     del imgs_list
     # Recombination of downsampled tissues 
-    lf_img = csf_img + gm_img + wm_img #+ bg_img
+    lf_img = (csf_img ) + gm_img + wm_img #+ bg_img
     return lf_img.flatten().unsqueeze(0)
 
 
@@ -200,8 +201,10 @@ class ModelTrainerModule(pl.LightningModule):
             #RQS: LF metrics over training
             rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_ = self.compute_rqs(pred_im, pred_seg)
             
-            final_img = (pred_im * pred_seg[1]) + (pred_im * pred_seg[2]) + (pred_im * pred_seg[3]) 
+            final_img = (pred_im * pred_seg[0]) + (pred_im * pred_seg[1]) + (pred_im * pred_seg[2])  
             
+
+
             wandb.log({ 
             "psnr_hf": psnr_hf.item(), "ssim_hf": ssim_hf.item(),
             "psnr_lf": psnr_.item(), "normalized_psnr_lf": normalized_psnr_.item(), "ssim_lf": ssim_.item(), 
@@ -209,6 +212,11 @@ class ModelTrainerModule(pl.LightningModule):
             "total_loss": loss.item(), "mse": mse_loss.item(), "seg": dice_loss.item(), "tv_seg": tv_loss_seg.item(), "tv_img": tv_loss_img.item(), 
             "pred_img": wandb.Image(norm(pred_im[:,:,95].unsqueeze(0)), mode='L'), "pred2_seg": wandb.Image(pred_seg[2,:,:,95].unsqueeze(0), mode='L'), "pred1_seg": wandb.Image(pred_seg[1,:,:,95].unsqueeze(0), mode='L'), "pred3_seg": wandb.Image(pred_seg[3,:,:,95].unsqueeze(0), mode='L'), #adding channel dimension with unsqueeze(0)
             "final_img": wandb.Image(norm(final_img[:,:,95].unsqueeze(0)), mode='L'),
+            "wm_img": wandb.Image(norm((pred_im * pred_seg[0])[:,:,95].unsqueeze(0)), mode='L'),
+            "gm_img": wandb.Image(norm((pred_im * pred_seg[1])[:,:,95].unsqueeze(0)), mode='L'),
+            "csf_img": wandb.Image(norm((pred_im * pred_seg[2])[:,:,95].unsqueeze(0)), mode='L'),
+            "bg_img": wandb.Image(norm((pred_im * pred_seg[3])[:,:,95].unsqueeze(0)), mode='L'),
+
             # "pred_img": wandb.Image(norm(pred_im[:,:,95]), mode='L'), "pred2_seg": wandb.Image(pred_seg[2,:,:,95].unsqueeze(0), mode='L'), "pred1_seg": wandb.Image(pred_seg[1,:,:,95].unsqueeze(0), mode='L'), "pred3_seg": wandb.Image(pred_seg[3,:,:,95].unsqueeze(0), mode='L') #adding channel dimension with unsqueeze(0)
             }) 
         # wandb_logger.log_image(key="pred", images=[norm(pred_im[:,:,90]).unsqueeze(0), norm(pred_im[:,:,95]).unsqueeze(0), pred_seg[2,:,:,95].unsqueeze(0)], caption=["slice: 90", "slice: 95", "seg_2_slice: 95"]) #adding channel dimension with unsqueeze(0)
