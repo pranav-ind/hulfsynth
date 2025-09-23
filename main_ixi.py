@@ -14,6 +14,7 @@ import copy
 
 import lightning as pl
 from lightning.pytorch.loggers import WandbLogger
+from pytorch_lightning.utilities import rank_zero_only
 import wandb
 import pprint
 
@@ -57,68 +58,73 @@ def wandb_setup(siren_module):
 
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-    pl.seed_everything(seed=9600, workers=True)
-    
-    config = copy.deepcopy(default_config)
-    config["in_features"] = 3
-    config["l1"] = 100 #mse
-    config["l3"] = 20 #seg
-    config["l4"] = 0.1 #tv_img
-    config["l5"] = 0.1 #tv_seg
-    config["size"] = (182, 218, 182)
-    config["size_lf"] = (182//2, 218//2, 182)
-    config["slice"] = 90
-    
-    dataset_num = 102 #ixi sample dataset
-    
-    hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_data(dataset_num, config) #uncomment
-    gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
-    gt_image = gt_image.to(torch.float32)
-    lf_gt = torch.tensor(norm(lf_gt)).unsqueeze(-1)
-    lf_gt = lf_gt.to(torch.float32)
-    # print("gt_image: ", gt_image.shape, "lf_gt: ", lf_gt.shape, "lf_gt_seg_dice: ", lf_gt_seg_dice.shape)
-    print('gt_image, lf_gt loaded')
+pl.seed_everything(seed=9600, workers=True)
 
+config = copy.deepcopy(default_config)
+config["in_features"] = 3
+config["l1"] = 100 #mse
+config["l3"] = 20 #seg
+config["l4"] = 0.1 #tv_img
+config["l5"] = 0.1 #tv_seg
+config["size"] = (182, 218, 182)
+config["size_lf"] = (182//2, 218//2, 182)
+config["slice"] = 90
 
-    dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
-    dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
+dataset_num = 102 #ixi sample dataset
 
-    HIDDEN_SIZE = 8 #best_config; 128/5/10000
-    NUM_LAYERS = 3
-    TRAINING_EPOCHS = 10
-    LEARNING_RATE = 5e-5
-    SIREN_FACTOR = 30.0 
-    siren_inr = MLP(in_size=3,
-                    out_size=5,
-                    hidden_size=HIDDEN_SIZE,
-                    num_layers=NUM_LAYERS,
-                    layer_class=SineLayer, 
-                    siren_factor=SIREN_FACTOR,
-                    )
-    # Re-initialize the weights and make sure they are different
-    initialize_siren_weights(siren_inr, SIREN_FACTOR)
-    siren_module = ModelTrainerModule(network=siren_inr,
-                                    hf_gt_im=gt_image,
-                                    lf_gt_im = lf_gt,
-                                    lf_gt_seg = lf_gt_seg_dice,
-                                    config = config,
-                                    lr=LEARNING_RATE,
-                                    name='SIREN',)
-    run, wandb_logger  = wandb_setup(siren_module)
-    
-
-    trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger)
-    trainer.fit(siren_module, train_dataloaders=dataloader)
+hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_data(dataset_num, config) #uncomment
+gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
+gt_image = gt_image.to(torch.float32)
+lf_gt = torch.tensor(norm(lf_gt)).unsqueeze(-1)
+lf_gt = lf_gt.to(torch.float32)
+# print("gt_image: ", gt_image.shape, "lf_gt: ", lf_gt.shape, "lf_gt_seg_dice: ", lf_gt_seg_dice.shape)
+print('gt_image, lf_gt loaded')
 
 
-    dummy_input, _ , _ = next(iter(dataloader))
-    dummy_input = dummy_input.view(-1, dummy_input.shape[-1])
-    model_saving_path =  "./wandb/model.onnx"
-    torch.onnx.export(siren_module.network.to('cpu'), dummy_input.to('cpu'), model_saving_path)
-    print("locally saved model to: ", model_saving_path)
-    wandb.save(model_saving_path)
+dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
+dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
 
-    run.log_model(path=model_saving_path, name="model")
-    run.finish()
+HIDDEN_SIZE = 128 #best_config; 128/5/10000
+NUM_LAYERS = 5
+TRAINING_EPOCHS = 10000
+LEARNING_RATE = 5e-5
+SIREN_FACTOR = 30.0 
+siren_inr = MLP(in_size=3,
+                out_size=5,
+                hidden_size=HIDDEN_SIZE,
+                num_layers=NUM_LAYERS,
+                layer_class=SineLayer, 
+                siren_factor=SIREN_FACTOR,
+                )
+# Re-initialize the weights and make sure they are different
+initialize_siren_weights(siren_inr, SIREN_FACTOR)
+wandb_logger = WandbLogger(project="hulfsynth")#, id="test_run_1001", resume="allow")
+siren_module = ModelTrainerModule(wandb_logger = wandb_logger,
+                                network=siren_inr,
+                                hf_gt_im=gt_image,
+                                lf_gt_im = lf_gt,
+                                lf_gt_seg = lf_gt_seg_dice,
+                                config = config,
+                                lr=LEARNING_RATE,
+                                name='SIREN',)
+
+# run, wandb_logger  = wandb_setup(siren_module)
+
+wandb_logger.watch(siren_module, log="all")
+
+
+trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger, accelerator='gpu', devices=1, strategy='auto')
+trainer.fit(siren_module, train_dataloaders=dataloader)
+
+
+dummy_input, _ , _ = next(iter(dataloader))
+dummy_input = dummy_input.view(-1, dummy_input.shape[-1])
+model_saving_path =  "./wandb/model.onnx"
+torch.onnx.export(siren_module.network.to('cpu'), dummy_input.to('cpu'), model_saving_path)
+print("locally saved model to: ", model_saving_path)
+wandb.save(model_saving_path)
+
+wandb_logger.experiment.log_model(path=model_saving_path, name="model")
+# run.finish()

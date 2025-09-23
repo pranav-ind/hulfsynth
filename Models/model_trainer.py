@@ -57,6 +57,7 @@ class ContrastModulation:
 
 class ModelTrainerModule(pl.LightningModule):
     def __init__(self,
+                wandb_logger: WandbLogger,
                  network: MLP,
                  hf_gt_im: torch.Tensor,
                  lf_gt_im: torch.Tensor, 
@@ -66,11 +67,12 @@ class ModelTrainerModule(pl.LightningModule):
                  name: str = "",
                  eval_interval: int = 100,
                  visualization_intervals: List[int] = [0, 100, 500, 1000, 5000, 10000],
+
                 ):
         super().__init__()
         self.lr = lr
         self.network = network
-
+        self.wandb_logger = wandb_logger
         # Logging
         self.name = name
         self.hf_gt_im = hf_gt_im
@@ -146,7 +148,7 @@ class ModelTrainerModule(pl.LightningModule):
         iou_ = self.iou_score(pred_lf_seg.unsqueeze(0).to('cpu'), self.lf_gt_seg.to('cpu'))
 
         dice2 = self.dice2(pred_lf_seg.unsqueeze(0).to('cpu'), self.lf_gt_seg.to('cpu'))
-        print("dice_lf: ", dice_, "iou_lf: ", iou_, "dice2: ", dice2)
+        # print("dice_lf: ", dice_, "iou_lf: ", iou_, "dice2: ", dice2)
         dice_ = dice_.mean()
         iou_ = iou_.mean()
         dice2 = dice2.mean()
@@ -173,8 +175,8 @@ class ModelTrainerModule(pl.LightningModule):
         # print("gt_batch shapes: ",coords.shape, lf_batch.shape, lf_batch_seg.shape)
         
         output_image, output_image_pre, output_seg, output_seg_pre = self.forward(coords)
-        output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
-        # output_image_lf = self.phi.forward(output_image, output_seg, self.M)
+        # output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
+        output_image_lf = self.phi.forward(output_image, output_seg, self.M)
         
         pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0).squeeze(0)).reshape(self.lf_chunk_size) for i in range(output_seg.shape[-1])] #downsampling pred_seg
         pred_seg = torch.stack(pred_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
@@ -189,12 +191,12 @@ class ModelTrainerModule(pl.LightningModule):
 
         
         #HF metrics over training 
-        if (self.current_epoch % 50 )== 0: #logging every epoch is expensive ; therefore logging in intervals of 50
+        if (self.current_epoch % 20 )== 0: #logging every epoch is expensive ; therefore logging in intervals of 50
             pred_im, pred_seg  = self.sample_at_resolution(self.hf_gt_im.shape[:-1]) #TODO: move HF validation metrics to another method
             psnr_hf =  self.psnr_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
             ssim_hf =  self.ssim_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
 
-            print("psnr_hf: ", psnr_hf, "ssim_hf: ", ssim_hf)
+            # print("psnr_hf: ", psnr_hf, "ssim_hf: ", ssim_hf)
             
             
             self.temp_list1.append(pred_im)
@@ -207,8 +209,9 @@ class ModelTrainerModule(pl.LightningModule):
             final_img = (pred_im * pred_seg[1]) + (pred_im * pred_seg[2]) + (pred_im * pred_seg[3]) 
             
 
-
-            wandb.log({ 
+            
+            # wandb.log(
+            log_dict = { 
             "psnr_hf": psnr_hf.item(), "ssim_hf": ssim_hf.item(),
             "psnr_lf": psnr_.item(), "normalized_psnr_lf": normalized_psnr_.item(), "ssim_lf": ssim_.item(), 
             "dice_lf": dice_.item(), "iou_lf": iou_.item(), "RQS": rqs_.item(),
@@ -219,10 +222,13 @@ class ModelTrainerModule(pl.LightningModule):
             "gm_img": wandb.Image(((pred_im * pred_seg[2])[:,:,slice_num].unsqueeze(0)), mode='L'),
             "csf_img": wandb.Image(((pred_im * pred_seg[3])[:,:,slice_num].unsqueeze(0)), mode='L'),
             "bg_img": wandb.Image(((pred_im * pred_seg[0])[:,:,slice_num].unsqueeze(0)), mode='L'),
-
-            # "pred_img": wandb.Image(norm(pred_im[:,:,slice_num]), mode='L'), "pred2_seg": wandb.Image(pred_seg[2,:,:,slice_num].unsqueeze(0), mode='L'), "pred1_seg": wandb.Image(pred_seg[1,:,:,slice_num].unsqueeze(0), mode='L'), "pred3_seg": wandb.Image(pred_seg[3,:,:,slice_num].unsqueeze(0), mode='L') #adding channel dimension with unsqueeze(0)
-            }) 
-        # wandb_logger.log_image(key="pred", images=[norm(pred_im[:,:,90]).unsqueeze(0), norm(pred_im[:,:,slice_num]).unsqueeze(0), pred_seg[2,:,:,slice_num].unsqueeze(0)], caption=["slice: 90", "slice: slice_num", "seg_2_slice: slice_num"]) #adding channel dimension with unsqueeze(0)
+            }
+            
+            # log_dict = {
+            # "psnr_hf": psnr_hf.item(), "ssim_hf": ssim_hf.item(),
+            # "final_img": wandb.Image((final_img[:,:,slice_num].unsqueeze(0)), mode='L'),}
+            # wandb_logger.log_image(key="pred", images=[norm(pred_im[:,:,90]).unsqueeze(0), norm(pred_im[:,:,slice_num]).unsqueeze(0), pred_seg[2,:,:,slice_num].unsqueeze(0)], caption=["slice: 90", "slice: slice_num", "seg_2_slice: slice_num"]) #adding channel dimension with unsqueeze(0)
+            self.wandb_logger.log_metrics(log_dict, step=self.global_step)
         return loss
 
 
