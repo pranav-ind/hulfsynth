@@ -36,7 +36,7 @@ def read_imgs(folder):
     return (img_nib, wm_nib, gm_nib, csf_nib)
 
 
-def tissue_probabilities(wm_nib, gm_nib, csf_nib):
+def get_hf_tissue_seg(wm_nib, gm_nib, csf_nib):
     '''
     Adds up all probability segmentations and creates a new segmentation for background tissue. Expected : sum of all (4) tissue probabilities = 1
     Returns a tuple of probabilities
@@ -44,9 +44,9 @@ def tissue_probabilities(wm_nib, gm_nib, csf_nib):
     csf =  csf_nib.get_fdata()  
     gm =   gm_nib.get_fdata() 
     wm =   wm_nib.get_fdata()
-    total_prob = csf + gm + wm
-    total_prob = total_prob.clip(max=1) #Because for some voxels the summation is giving value slightly greater than 1.0 (ex : 1.0000000298023224). So clipping max value to 1
-    bg = 1 - total_prob
+    total_seg = csf + gm + wm
+    total_seg = total_seg.clip(max=1) #Because for some voxels the summation is giving value slightly greater than 1.0 (ex : 1.0000000298023224). So clipping max value to 1
+    bg = 1 - total_seg
     bg = np.floor(bg)
     return (wm, gm, csf, bg)
 
@@ -64,6 +64,34 @@ def seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg):
 
     return (wm, gm, csf, bg, hf_img)
 
+def calc_ixi_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset):
+    rayleigh_correction = 1.53
+    if(dataset ==102):
+        #ROIs are extracted manually. For example, refer roi_gen.ipynb 
+        slice_num = 90
+        wm_roi_pixels = img_nib.get_fdata()[108:122, 121:161, slice_num][wm_nib.get_fdata()[108:122, 121:161, slice_num]>0.9]
+        gm_roi_pixels = img_nib.get_fdata()[24:29, 96:106, slice_num][gm_nib.get_fdata()[24:29, 96:106, slice_num]>0.9]
+        csf_roi_pixels = img_nib.get_fdata()[84:88, 128:136, slice_num][csf_nib.get_fdata()[84:88, 128:136, slice_num]>0.9]
+    
+    noise_file = "./Data/ixi/T1/" + str(dataset) + "/raw.nii.gz"
+    noise = nib.load(noise_file)
+    # print("BG Noise in different regions :", noise.get_fdata()[:20,:20,95].std(), noise.get_fdata()[150:175,150:175,95].std(), noise.get_fdata()[155:,:25,95].std(), noise.get_fdata()[:25,150:170,95].std()) #Mean of all 4 regions in background
+    
+    std_bg = noise.get_fdata()[:,163,:][55:79, 6:16, ].std() #Background Noise extracted manually
+
+    csf_snr = csf_roi_pixels.mean()/ (std_bg * rayleigh_correction)
+    gm_snr = gm_roi_pixels.mean()/ (std_bg * rayleigh_correction)
+    wm_snr = wm_roi_pixels.mean()/ (std_bg * rayleigh_correction)
+
+
+    Ccg = abs(csf_snr - gm_snr) 
+    Ccw = abs(csf_snr - wm_snr)
+    Cgw = abs(gm_snr - wm_snr)
+
+    return (wm_snr, gm_snr, csf_snr)
+
+
+
 
 def calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset):
 
@@ -76,11 +104,15 @@ def calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset):
         gm_roi_pixels = img_nib.get_fdata()[76:80, 123:128,95][gm_nib.get_fdata()[76:80, 123:128,95]>0.9]
         csf_roi_pixels = img_nib.get_fdata()[82:86,119:128,95][csf_nib.get_fdata()[82:86,119:128,95]>0.9]
 
-    else:
+    elif(dataset ==2):
         #ROIs are extracted manually. For example, refer roi_gen.ipynb 
         wm_roi_pixels = img_nib.get_fdata()[105:110, 132:142, 95][wm_nib.get_fdata()[105:110, 132:142, 95]>0.9]
         gm_roi_pixels = img_nib.get_fdata()[45:48,43:48,95][gm_nib.get_fdata()[45:48,43:48,95]>0.9]
-        csf_roi_pixels = img_nib.get_fdata()[96:101,70:80,95][csf_nib.get_fdata()[96:101,70:80,95]>0.9] 
+        csf_roi_pixels = img_nib.get_fdata()[96:101,70:80,95][csf_nib.get_fdata()[96:101,70:80,95]>0.9]
+    else:
+        (wm_snr, gm_snr, csf_snr) = calc_ixi_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset)
+        return (wm_snr, gm_snr, csf_snr)
+
 
     noise_file = "./Data/data_" + str(dataset) + "/raw.nii.gz"
     noise = nib.load(noise_file)
@@ -239,11 +271,14 @@ def forward(dataset_num=1):
     '''
     This function will generate the ground truth data for a given HF Image
     '''
-    
-    folder = "./Data/data_" + str(dataset_num) + "/"
+    if(dataset_num==1 or dataset_num ==2):
+
+        folder = "./Data/data_" + str(dataset_num) + "/"
+    else:        
+        folder = './Data/ixi/T1/' + str(dataset_num) + "/"
     (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder)
-    (wm_prob, gm_prob, csf_prob, bg_prob) = tissue_probabilities(wm_nib, gm_nib, csf_nib)
-    (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_prob)
+    (wm_seg, gm_seg, csf_seg, bg_seg) = get_hf_tissue_seg(wm_nib, gm_nib, csf_nib)
+    (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_seg)
     (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
 
     s, c = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
@@ -261,7 +296,7 @@ def forward(dataset_num=1):
 
 
     # plot_4_images(wm_lf_like, gm_lf_like, csf_lf_like, lf_like)#,vmax=[100, 100, 100, 100])
-    return (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_prob, gm_prob, csf_prob, bg_prob), (wm_snr, gm_snr, csf_snr), M
+    return (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), (wm_snr, gm_snr, csf_snr), M
 
 
 # forward(dataset_num = 1)

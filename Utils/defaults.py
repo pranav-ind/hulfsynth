@@ -1,4 +1,11 @@
-default_config = {"total_steps" : 1500, "steps_til_summary" : 250, "size" :(174, 192), "size_lf" :(87, 96), "M" : [], "slice" : 95,
+default_config = {"total_steps" : 1500, 
+"steps_til_summary" : 250, 
+"size" :(174, 192, 192), 
+"size_lf" :(87, 96, 192), 
+"M" : [], 
+"slice" : 95,
+
+
 "l1" : 2.5, 
 "l2" : 1e-2, 
 "l3" : 0.6,

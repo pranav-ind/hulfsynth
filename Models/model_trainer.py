@@ -27,11 +27,11 @@ from Utils.utils import psnr, get_device, norm, normalize_psnr
 
 class ContrastModulation:
   #2D
-  def __init__(self, ):
+  def __init__(self, config):
     self.hf_chunk_size = (96, 96, 4)
     self.chunk_size_lf = (96//2, 96//2, 4)
-    self.hf_size = (172, 192, 192)
-    self.lf_size = (172//2, 192//2, 192)
+    self.hf_size = config["size"] #(172, 192, 192)
+    self.lf_size = config["size_lf"] #(172//2, 192//2, 192)
 
   
   def forward(self, output_image, output_seg, M):
@@ -85,7 +85,7 @@ class ModelTrainerModule(pl.LightningModule):
         self.lf_chunk_size = (96//2,96//2,4)
         self.num_classes = 4
         self.config = config
-        self.phi = ContrastModulation()
+        self.phi = ContrastModulation(self.config)
         self.M = [1, 1, 1]
 
         self.dice_score = monai.metrics.DiceMetric()
@@ -164,18 +164,21 @@ class ModelTrainerModule(pl.LightningModule):
 
 
     def training_step(self, batch, batch_idx):
+        slice_num = self.config["slice"]
+        lf_chunk_size = self.lf_chunk_size
+
         coords, lf_batch, lf_batch_seg = batch
         coords = coords.view(-1, coords.shape[-1]) #coord input of each batch
         lf_batch = lf_batch.view(-1, lf_batch.shape[-1]) #lf_gt of each batch
         # print("gt_batch shapes: ",coords.shape, lf_batch.shape, lf_batch_seg.shape)
         
         output_image, output_image_pre, output_seg, output_seg_pre = self.forward(coords)
-        # output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
-        output_image_lf = self.phi.forward(output_image, output_seg, self.M)
+        output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
+        # output_image_lf = self.phi.forward(output_image, output_seg, self.M)
         
         pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0).squeeze(0)).reshape(self.lf_chunk_size) for i in range(output_seg.shape[-1])] #downsampling pred_seg
         pred_seg = torch.stack(pred_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
-        lf_batch_seg = [lf_batch_seg[:,i].reshape(48,48,4) for i in range(lf_batch_seg[0].shape[0])]
+        lf_batch_seg = [lf_batch_seg[:,i].reshape(lf_chunk_size) for i in range(lf_batch_seg[0].shape[0])]
         lf_batch_seg = torch.stack(lf_batch_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
         
         # print('Outputs: ', output_image.shape, output_seg.shape, output_image_lf.shape, lf_batch_seg.shape)
@@ -210,16 +213,16 @@ class ModelTrainerModule(pl.LightningModule):
             "psnr_lf": psnr_.item(), "normalized_psnr_lf": normalized_psnr_.item(), "ssim_lf": ssim_.item(), 
             "dice_lf": dice_.item(), "iou_lf": iou_.item(), "RQS": rqs_.item(),
             "total_loss": loss.item(), "mse": mse_loss.item(), "seg": dice_loss.item(), "tv_seg": tv_loss_seg.item(), "tv_img": tv_loss_img.item(), 
-            "pred_img": wandb.Image((pred_im[:,:,95].unsqueeze(0)), mode='L'), "pred2_seg": wandb.Image(pred_seg[2,:,:,95].unsqueeze(0), mode='L'), "pred1_seg": wandb.Image(pred_seg[1,:,:,95].unsqueeze(0), mode='L'), "pred3_seg": wandb.Image(pred_seg[3,:,:,95].unsqueeze(0), mode='L'), #adding channel dimension with unsqueeze(0)
-            "final_img": wandb.Image((final_img[:,:,95].unsqueeze(0)), mode='L'),
-            "wm_img": wandb.Image(((pred_im * pred_seg[1])[:,:,95].unsqueeze(0)), mode='L'),
-            "gm_img": wandb.Image(((pred_im * pred_seg[2])[:,:,95].unsqueeze(0)), mode='L'),
-            "csf_img": wandb.Image(((pred_im * pred_seg[3])[:,:,95].unsqueeze(0)), mode='L'),
-            "bg_img": wandb.Image(((pred_im * pred_seg[0])[:,:,95].unsqueeze(0)), mode='L'),
+            "pred_img": wandb.Image((pred_im[:,:,slice_num].unsqueeze(0)), mode='L'), "pred2_seg": wandb.Image(pred_seg[2,:,:,slice_num].unsqueeze(0), mode='L'), "pred1_seg": wandb.Image(pred_seg[1,:,:,slice_num].unsqueeze(0), mode='L'), "pred3_seg": wandb.Image(pred_seg[3,:,:,slice_num].unsqueeze(0), mode='L'), #adding channel dimension with unsqueeze(0)
+            "final_img": wandb.Image((final_img[:,:,slice_num].unsqueeze(0)), mode='L'),
+            "wm_img": wandb.Image(((pred_im * pred_seg[1])[:,:,slice_num].unsqueeze(0)), mode='L'),
+            "gm_img": wandb.Image(((pred_im * pred_seg[2])[:,:,slice_num].unsqueeze(0)), mode='L'),
+            "csf_img": wandb.Image(((pred_im * pred_seg[3])[:,:,slice_num].unsqueeze(0)), mode='L'),
+            "bg_img": wandb.Image(((pred_im * pred_seg[0])[:,:,slice_num].unsqueeze(0)), mode='L'),
 
-            # "pred_img": wandb.Image(norm(pred_im[:,:,95]), mode='L'), "pred2_seg": wandb.Image(pred_seg[2,:,:,95].unsqueeze(0), mode='L'), "pred1_seg": wandb.Image(pred_seg[1,:,:,95].unsqueeze(0), mode='L'), "pred3_seg": wandb.Image(pred_seg[3,:,:,95].unsqueeze(0), mode='L') #adding channel dimension with unsqueeze(0)
+            # "pred_img": wandb.Image(norm(pred_im[:,:,slice_num]), mode='L'), "pred2_seg": wandb.Image(pred_seg[2,:,:,slice_num].unsqueeze(0), mode='L'), "pred1_seg": wandb.Image(pred_seg[1,:,:,slice_num].unsqueeze(0), mode='L'), "pred3_seg": wandb.Image(pred_seg[3,:,:,slice_num].unsqueeze(0), mode='L') #adding channel dimension with unsqueeze(0)
             }) 
-        # wandb_logger.log_image(key="pred", images=[norm(pred_im[:,:,90]).unsqueeze(0), norm(pred_im[:,:,95]).unsqueeze(0), pred_seg[2,:,:,95].unsqueeze(0)], caption=["slice: 90", "slice: 95", "seg_2_slice: 95"]) #adding channel dimension with unsqueeze(0)
+        # wandb_logger.log_image(key="pred", images=[norm(pred_im[:,:,90]).unsqueeze(0), norm(pred_im[:,:,slice_num]).unsqueeze(0), pred_seg[2,:,:,slice_num].unsqueeze(0)], caption=["slice: 90", "slice: slice_num", "seg_2_slice: slice_num"]) #adding channel dimension with unsqueeze(0)
         return loss
 
 
