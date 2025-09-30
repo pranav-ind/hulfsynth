@@ -56,7 +56,7 @@ def wandb_setup(siren_module):
 
 
 if __name__ == '__main__':
-    
+    '''
     parser = argparse.ArgumentParser()
     parser.add_argument("-l1", "--l1")
     parser.add_argument("-l3", "--l3")
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     # parser.add_argument("-l5", "--l5")
     parser.add_argument("-ep", "--epochs") #epochs
     args = parser.parse_args()
-    
+    '''
     
     
     pl.seed_everything(seed=9600, workers=True)
@@ -81,8 +81,9 @@ if __name__ == '__main__':
     config["size"] = (182, 218, 182)
     config["size_lf"] = (182//2, 218//2, 182)
     config["slice"] = 90
+    
     dataset_num = 102 #ixi sample dataset
-
+    slice_num = config["slice"]
     
 
     hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_data(dataset_num, config) #uncomment
@@ -90,6 +91,8 @@ if __name__ == '__main__':
     gt_image = gt_image.to(torch.float32)
     lf_gt = torch.tensor(norm(lf_gt)).unsqueeze(-1)
     lf_gt = lf_gt.to(torch.float32)
+    plt.imshow(lf_gt[:,:,slice_num], cmap='gray')
+    plt.show()
     # print("gt_image: ", gt_image.shape, "lf_gt: ", lf_gt.shape, "lf_gt_seg_dice: ", lf_gt_seg_dice.shape)
     # print('gt_image, lf_gt loaded')
 

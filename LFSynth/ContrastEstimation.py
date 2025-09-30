@@ -284,7 +284,7 @@ def forward(dataset_num=1):
     (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
 
     s, c = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
-    c = np.array([9.03, 27.17, 18.14, ])
+    # c = np.array([9.03, 27.17, 18.14, ]) 
     print("SNR matrix:", s, "Target Contrast: " , c)
     grid = GridSearch(s,c)
     grid_results = grid.solve()

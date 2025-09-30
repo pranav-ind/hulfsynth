@@ -2,7 +2,7 @@ import torchio as tio
 import torch
 from torch.utils.data import DataLoader, Dataset
 import nibabel as nib
-from Utils.utils import dice_stack_helper
+from Utils.utils import dice_stack_helper, segment
 from Utils.defaults import default_config
 from LFSynth.ContrastEstimation import forward as contrast_forward
 from LFSynth.ContrastEstimation import read_imgs, get_hf_tissue_seg
@@ -12,6 +12,7 @@ from Utils.utils import get_device, norm
 import sys
 from PIL import Image
 from Data.ImagePreparation import ImagePreparation
+import numpy as np
 
 
 
@@ -22,7 +23,14 @@ from Data.ImagePreparation import ImagePreparation
 
 
 
-def get_lf_observed_segmentations(dataset_num):
+def get_lf_observed_segmentations(dataset_num, config):
+    #TODO: parse config = default_config
+    if(config["is_new_contrast"]):
+        print('segmenting the image... (Flag config["is_new_contrast"]) ')
+        path = './Data/ixi/T1/' + str(dataset_num) + '/ulf/'
+        img_loc = './Data/ixi/T1/' + str(dataset_num) + '/ulf/ulf_temp.nii.gz'
+        segment(img_loc, path)
+    
     lf_wm_location = "./Data/ixi/T1/" + str(dataset_num) + "/ulf/fast_pve_2.nii.gz"
     lf_gm_location = "./Data/ixi/T1/" + str(dataset_num) + "/ulf/fast_pve_1.nii.gz"
     lf_csf_location = "./Data/ixi/T1/" + str(dataset_num) + "/ulf/fast_pve_0.nii.gz"
@@ -58,7 +66,7 @@ def load_data(dataset_num, config=default_config):
     # random.seed(9600) #For Reproducibility -> using pl.seed_everything in main()
     # device = get_device() #Returns either MPS/CUDA/CPU depending on availability
 
-    lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = get_lf_observed_segmentations(dataset_num) #Load ULF Observed Segmentations
+    # lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = get_lf_observed_segmentations(dataset_num) #Load ULF Observed Segmentations
     
     #Load HF observed
     hf_loc = "./Data/ixi/T1/" + str(dataset_num)+ "/hf/fast_restore.nii.gz"
@@ -69,28 +77,32 @@ def load_data(dataset_num, config=default_config):
     #Load ULF observed
     lf_observed = norm(lf_like) #normalized
     
+    config['is_new_contrast'] = True
+    if(config["is_new_contrast"]):
+        noise_threshold = 17.0 #Removing bg pixels for FSL FAST; Alternatively, use FSL SUSAN to remove bg noise
+        lf_like[lf_like< noise_threshold] = 0
+        ulf_loc = "./Data/ixi/T1/" + str(dataset_num)+ "/ulf/"
+        lf_nib = nib.Nifti1Image(lf_like, np.eye(4)) #ULF with bg noise
+        nib.save(lf_nib, ulf_loc+'ulf_temp.nii.gz')
+        lf_nib = nib.Nifti1Image(lf_observed, np.eye(4)) #ULF with bg noise
+        nib.save(lf_nib, ulf_loc+'ulf.nii.gz')
+        print('Saved new ULF image with degradation vector: ', M)
+
     
-    # orig_img = Image.fromarray(lf_observed)
+    
+    
     
     #Updating size config parameters
     config["size"] = (hf_observed.shape[0], hf_observed.shape[1], hf_observed.shape[2]) #Loading 2D Images. For datasets = 1, 2 (174, 192)
     config["size_lf"] = (lf_observed.shape[0], lf_observed.shape[1], lf_observed.shape[2])
-    # config["M"] = M
     
-
-    
-    lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = get_lf_observed_segmentations(dataset_num) #Load ULF Observed Segmentations
+ 
+    lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = get_lf_observed_segmentations(dataset_num, config) #Load ULF Observed Segmentations
     lf_observed_seg_dice = torch.stack((lf_bg_seg[0].reshape(config["size_lf"]), lf_wm_seg[0].reshape(config["size_lf"]), lf_gm_seg[0].reshape(config["size_lf"]), lf_csf_seg[0].reshape(config["size_lf"])), dim=0).unsqueeze(0)
  
 
-    # img_prep_obj = ImagePreparation(lf_observed_seg_dice, config["size_lf"][0], config["size_lf"][1], is_ffe=config["ffe"]) #Image Preparation Object
-    # lf_dataloader = DataLoader(img_prep_obj, batch_size=1, pin_memory=True, num_workers=0)
-    # config["in_features"] = 256 if(config["ffe"]==True) else  2
-    # print(lf_wm_seg.shape, lf_observed_seg_dice.shape)
-
     # return hf_observed, lf_dataloader, lf_observed, M #might need to uncomment this. lf_dataloader is the default used everywhere
     return hf_observed, lf_observed, lf_observed_seg_dice, M #might need to comment this
-
 
 
 
