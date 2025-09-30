@@ -68,7 +68,7 @@ def load_data(dataset_num, config=default_config):
     # print(wm_lf_like.shape, lf_like.shape, wm_seg.shape, wm_snr, M)
     #Load ULF observed
     lf_observed = norm(lf_like) #normalized
-    
+    print('temp')
     
     # orig_img = Image.fromarray(lf_observed)
     
