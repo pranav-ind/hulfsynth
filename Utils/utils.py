@@ -39,7 +39,7 @@ def normalize_psnr(psnr_value, min_val=15.0, max_val=30.0):
 def get_device():
     
     if(torch.cuda.is_available()):
-        device = torch.device("cuda:7")
+        device = torch.device("cuda:0")
     elif(torch.backends.mps.is_available()):
         device = torch.device("mps")
     else:

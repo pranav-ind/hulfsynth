@@ -9,11 +9,12 @@ from typing import Tuple, List, Optional
 import matplotlib.pyplot as plt
 from datetime import datetime
 import copy
-import gc
+import argparse
 
 
 import lightning as pl
 from lightning.pytorch.loggers import WandbLogger
+from pytorch_lightning.utilities import rank_zero_only
 import wandb
 import pprint
 
@@ -29,7 +30,7 @@ from Models.model_trainer import ModelTrainerModule
 from Models.models import Siren, Finer
 
 from Utils.utils import get_full_img, norm, get_device, dice_stack_helper, get_model, ClearCache
-from Data.load_data_3d import load_data, get_gt_seg
+from Data.load_ixi import load_data, get_hf_observed_segmentations
 from Utils.defaults import default_config
 from Utils.plotting_utils2 import plot_seg_results_paper, plot_final_results_paper, plot_hf_results_paper
 from Utils.plotting_utils import loss_plot, plot_image_metrics, plot_4_images
@@ -40,171 +41,107 @@ from Data.patchwise3D import RandomPointsDataset
 POINTS_PER_SAMPLE = 96*96*4
 lf_points_per_sample = 48*48*4
 
-
-'''
-def wandb_setup():
+def wandb_setup(siren_module):
     wandb.login()
-    project_ = "hulfsynth_enc"
-    run = wandb.init(project=project_)
-    wandb_logger = WandbLogger(project=project_)
-    # wandb_logger.watch(siren_module, log="all")
-    return run, wandb_logger
-'''
-
-
-
-def wand_train():
-    
     project_ = "hulfsynth"
     run = wandb.init(project=project_)
     wandb_logger = WandbLogger(project=project_)
-    with run:
-        dataset_num = 1
-        pl.seed_everything(seed=9600, workers=True)
-        config_ = copy.deepcopy(default_config)
-        config_["in_features"] = 3
-        # config["total_steps"] = wandb.config.epochs
-        
-        config_["l1"] = wandb.config.config_choice['l1']
-        config_["l3"] = wandb.config.config_choice['l3']
-        config_["l4"] = wandb.config.config_choice['l4']
-        config_["l5"] = wandb.config.config_choice['l5']
-        
-        HIDDEN_SIZE = wandb.config.config_choice['hidden_size'] #best_config; 256/5/3000
-        NUM_LAYERS = wandb.config.config_choice['num_layers']
-        TRAINING_EPOCHS = wandb.config.config_choice['epochs']
-        LEARNING_RATE = wandb.config.config_choice['learning_rate']
-        SIREN_FACTOR = 30.0 
+    wandb_logger.watch(siren_module, log="all")
+    return run, wandb_logger
 
-        hf_ground_truth, lf_gt, prior_seg_dice, lf_gt_seg_dice, M = load_data(1, config_) #uncomment
-        gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
-        gt_image = gt_image.to(torch.float32)
-        lf_gt = torch.tensor(norm(lf_gt)).unsqueeze(-1)
-        lf_gt = lf_gt.to(torch.float32)
 
-        dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
-        dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
 
-        siren_inr = MLP(in_size=config_["in_features"],
+
+
+
+
+if __name__ == '__main__':
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-l1", "--l1")
+    parser.add_argument("-l3", "--l3")
+    parser.add_argument("-l4", "--l4", nargs="*", type=float, default=[])
+    parser.add_argument("-l5", "--l5", nargs="*", type=float, default=[])
+    # parser.add_argument("-l5", "--l5")
+    parser.add_argument("-ep", "--epochs") #epochs
+    args = parser.parse_args()
+    
+    
+    
+    pl.seed_everything(seed=9600, workers=True)
+    config = copy.deepcopy(default_config)
+    
+    config["in_features"] = 3
+    config["l1"] = float(args.l1) #100 #mse
+    config["l3"] = float(args.l3) #20 #seg
+    config["l4"] = args.l4 #0.01 #tv_img
+    config["l5"] = args.l5 # 0.1 #tv_seg
+    
+    
+    config["epochs"] = int(args.epochs)
+    config["size"] = (182, 218, 182)
+    config["size_lf"] = (182//2, 218//2, 182)
+    config["slice"] = 90
+    dataset_num = 102 #ixi sample dataset
+
+    
+
+    hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_data(dataset_num, config) #uncomment
+    gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
+    gt_image = gt_image.to(torch.float32)
+    lf_gt = torch.tensor(norm(lf_gt)).unsqueeze(-1)
+    lf_gt = lf_gt.to(torch.float32)
+    # print("gt_image: ", gt_image.shape, "lf_gt: ", lf_gt.shape, "lf_gt_seg_dice: ", lf_gt_seg_dice.shape)
+    print('gt_image, lf_gt loaded')
+
+
+    dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
+    dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
+    
+    
+
+    
+    HIDDEN_SIZE = 128 #best_config; 128/5/10000
+    NUM_LAYERS = 5
+    TRAINING_EPOCHS = config["epochs"]
+    LEARNING_RATE = 5e-5
+    SIREN_FACTOR = 30.0 
+    siren_inr = MLP(in_size=3,
                     out_size=5,
                     hidden_size=HIDDEN_SIZE,
                     num_layers=NUM_LAYERS,
                     layer_class=SineLayer, 
                     siren_factor=SIREN_FACTOR,
                     )
-        initialize_siren_weights(siren_inr, SIREN_FACTOR)
-        siren_module = ModelTrainerModule(network=siren_inr,
+    # Re-initialize the weights and make sure they are different
+    initialize_siren_weights(siren_inr, SIREN_FACTOR)
+    wandb_logger = WandbLogger(project="hulfsynth", config=args)#, id="test_run_1001", resume="allow")
+    siren_module = ModelTrainerModule(wandb_logger = wandb_logger,
+                                    network=siren_inr,
                                     hf_gt_im=gt_image,
                                     lf_gt_im = lf_gt,
                                     lf_gt_seg = lf_gt_seg_dice,
-                                    config = config_,                                    
+                                    config = config,
                                     lr=LEARNING_RATE,
-                                    name='SIREN',
-                                    )
-        trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger)
-        wandb_logger.watch(siren_module, log="all")
-        trainer.fit(siren_module, train_dataloaders=dataloader)
-        dummy_input, _ , _ = next(iter(dataloader))
-        dummy_input = dummy_input.view(-1, dummy_input.shape[-1])
-        model_saving_path =  "./wandb/model.onnx"
-        torch.onnx.export(siren_module.network.to('cpu'), dummy_input.to('cpu'), model_saving_path)
-        print("locally saved model to: ", model_saving_path)
-        wandb.save(model_saving_path)
-        run.log_model(path=model_saving_path, name="model")
-        run.finish()
-        del dataloader, trainer, siren_module, dummy_input
-        torch.cuda.empty_cache()
-        gc.collect()
+                                    name='SIREN',)
 
-
-'''
-sweep_config = {
-    "method": "grid",
-    "metric": {"goal": "maximize", "name": "RQS"},
-    "parameters": 
-    {
+    # run, wandb_logger  = wandb_setup(siren_module)
     
-    'epochs': {'values': [2000, 2500]},
-    'l1': {'values': [100]},
-    'l3': {'values': [1, 1.25, 1.5, 2]},
-    'l4': {'values': [0.04, 0.075]},
-    'l5': {'values': [0.06, 0.075]},
+    wandb_logger.watch(siren_module, log="all")
+
+
+    trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger, accelerator='gpu', devices=1, strategy='ddp')
+    trainer.fit(siren_module, train_dataloaders=dataloader)
+
+
+    dummy_input, _ , _ = next(iter(dataloader))
+    dummy_input = dummy_input.view(-1, dummy_input.shape[-1])
+    model_saving_path =  "./wandb/model.onnx"
+    torch.onnx.export(siren_module.network.to('cpu'), dummy_input.to('cpu'), model_saving_path)
+    print("locally saved model to: ", model_saving_path)
+    # wandb.save(model_saving_path)
+
+    wandb_logger.experiment.log_model(path=model_saving_path, name="model")
     
-    # 'l4': {
-    #     # a flat distribution between 0 and 0.1
-    #     'distribution': 'uniform',
-    #     'min': 0,
-    #     'max': 0.1
-    #   },
-    # 'l5': {
-    #     # a flat distribution between 0 and 0.1
-    #     'distribution': 'uniform',
-    #     'min': 0,
-    #     'max': 0.1
-    #   }
+    print(config)
     
-
-    # 'epochs': {'values': [15, 20, 25]},
-    # 'l1': {'values': [1e2]},
-    # 'l3': {'values': [1]},
-    # 'l4': {'values': [0.04]},
-    # 'l5': {'values': [0.06]},
-    
-    }
-    
-     
-    
-
-}
-'''
-
-import yaml
-import os
-import subprocess
-import re
-
-if __name__ == '__main__':
-    wandb.login()
-    
-    # Load the YAML config file
-    with open('./sweep_config2.yaml', 'r') as file:
-        sweep_config = yaml.safe_load(file)
-    pprint.pprint(sweep_config)
-    sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth")
-    # wandb.agent(sweep_id, function=wand_train, count=6)
-
-
-    # Step 1: Create sweep from yaml
-    result = subprocess.run(
-        ["wandb", "sweep", "sweep_config.yaml"],
-        stdout=subprocess.PIPE,
-        text=True
-    )
-
-    # Extract SWEEP_ID from output
-    match = re.search(r"wandb agent (\S+)", result.stdout)
-    if not match:
-        raise RuntimeError("Could not extract SWEEP_ID from wandb sweep output")
-    sweep_id = match.group(1)
-
-    print(f"Created sweep: {sweep_id}")
-
-    # Step 2: Run multiple jobs on different GPUs
-    total_runs = 6
-    processes = []
-    for i in range(total_runs):
-        gpu_id = 0 if i < 3 else 1
-        
-        env = os.environ.copy()
-        env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
-        
-        print(f"Starting run {i+1}/{total_runs} on GPU {gpu_id}")
-        
-        p = subprocess.Popen(
-            ["wandb", "agent", "--count", "1", sweep_id],
-            env=env
-        )
-        processes.append(p)
-
-    for p in processes:
-        p.wait()

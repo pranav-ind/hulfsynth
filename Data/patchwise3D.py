@@ -1,3 +1,5 @@
+
+
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
@@ -47,6 +49,7 @@ class RandomPointsDataset(Dataset):
         
         
         point_indices = [torch.randint(0, i, (self.points_num,), device=self.device) for i in self.dim_sizes] # Create random sample of voxel indices
+        # point_indices = [torch.randint(0, i, (self.points_num,),) for i in self.dim_sizes] # Create random sample of voxel indices
     
         #Retrival
         voxel_values = self.lf_image[tuple(point_indices)] # Retrieve image voxel values from selected indices
@@ -62,6 +65,7 @@ class RandomPointsDataset(Dataset):
         #Normalizing coords
         point_coords = torch.stack(point_indices, dim=-1) # Convert point indices into normalized [-1.0, 1.0] coordinates
         spatial_dims = torch.tensor(self.dim_sizes, device=self.device)
+        # spatial_dims = torch.tensor(self.dim_sizes)
         point_coords_norm = point_coords / (spatial_dims / 2) - 1
 
         return point_coords_norm, voxel_values, voxel_values_seg

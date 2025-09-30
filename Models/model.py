@@ -82,10 +82,12 @@ class MLP(nn.Module):
         for i, layer in enumerate(self.layers):
             x = layer(x)
         # Split output layer: first neuron for image, remaining neurons for segmentation (as different activation functions are applied to intensity and segmentations)
+        # output_image_pre = x[:,:4] #output image neuron before applying activation function
         output_image_pre = x[:,0] #output image neuron before applying activation function
         output_seg_pre = x[:,1:] #output seg neurons before applying activation function
         output_image = self.relu(output_image_pre)
         output_seg = self.softmax(output_seg_pre)
+        
         return output_image, output_image_pre, output_seg, output_seg_pre
 
 

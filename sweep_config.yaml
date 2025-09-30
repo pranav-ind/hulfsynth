@@ -1,12 +1,12 @@
 program: main.py
-name: sweeptest
+name: sweeptest1234
 method: random
 metric:
   goal: maximize
   name: RQS
 parameters:
   epochs:
-    values: [2000, 2500, 3000]
+    values: [200, 250, 300]
   l1:
     values: [1, 5, 10, 100, 50, 25]
   l3:

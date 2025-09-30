@@ -49,8 +49,6 @@ for file_path in glob.glob(os.path.join(input_dir, '*.nii.gz')):
         gen_image = model.predict(resized_slice_data)
         
         gen_image = np.squeeze(gen_image, axis=0)
-        
-        
         gen_image = np.squeeze(gen_image, axis=-1)
         
         rescaled_arr = (gen_image + 1) * 127.5

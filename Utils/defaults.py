@@ -4,8 +4,8 @@ default_config = {"total_steps" : 1500,
 "size_lf" :(87, 96, 192), 
 "M" : [], 
 "slice" : 95,
-
-
+"hf_chunk_size": (96, 96, 4),
+"chunk_size_lf": (96//2, 96//2, 4),
 "l1" : 2.5, 
 "l2" : 1e-2, 
 "l3" : 0.6,

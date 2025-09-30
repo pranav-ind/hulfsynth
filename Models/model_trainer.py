@@ -28,8 +28,8 @@ from Utils.utils import psnr, get_device, norm, normalize_psnr
 class ContrastModulation:
   #2D
   def __init__(self, config):
-    self.hf_chunk_size = (96, 96, 4)
-    self.chunk_size_lf = (96//2, 96//2, 4)
+    self.hf_chunk_size = config["hf_chunk_size"] #(96, 96, 4)
+    self.chunk_size_lf = config["chunk_size_lf"] #(96//2, 96//2, 4)
     self.hf_size = config["size"] #(172, 192, 192)
     self.lf_size = config["size_lf"] #(172//2, 192//2, 192)
 
@@ -39,20 +39,24 @@ class ContrastModulation:
       
     #Weighted Sum of Segmentation Probabilities and Image Intensities
 
-    imgs_list = [F.interpolate((output_seg[:,i].reshape(hf_chunk_size) * output_image.reshape(hf_chunk_size)).permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0).permute(1,2,0) for i in range(output_seg.shape[-1])]
+    # imgs_list = [F.interpolate((output_seg[:,i].reshape(hf_chunk_size) * output_image[:,i].reshape(hf_chunk_size)).permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0).permute(1,2,0) for i in range(output_seg.shape[-1])]
+    
+    imgs_list = [(F.interpolate((output_seg[:,i].reshape(hf_chunk_size) * output_image.reshape(hf_chunk_size)).flatten().unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0)) for i in range(output_seg.shape[-1])]
+    # F.interpolate(output_image_pre.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0)
     output_image = output_image.to('cpu')
     output_seg = output_seg.to('cpu')
 
-    bg_img = (imgs_list[0])
-    wm_img = (imgs_list[1]) * M[0]
-    gm_img = (imgs_list[2]) * M[1]
-    csf_img = (imgs_list[3]) * M[2] 
+    bg_img = (imgs_list[0]).reshape(self.chunk_size_lf)
+    wm_img = (imgs_list[1]).reshape(self.chunk_size_lf) * M[0]
+    gm_img = (imgs_list[2]).reshape(self.chunk_size_lf) * M[1]
+    csf_img = (imgs_list[3]).reshape(self.chunk_size_lf) * M[2] 
     
 
     del imgs_list
     # Recombination of downsampled tissues 
-    lf_img = csf_img + gm_img + wm_img + bg_img
+    lf_img = csf_img + gm_img + wm_img #+ bg_img #shape (1, *lf_chunk)
     return lf_img.flatten().unsqueeze(0)
+    # return wm_img, gm_img, csf_img
 
 
 class ModelTrainerModule(pl.LightningModule):
@@ -72,8 +76,9 @@ class ModelTrainerModule(pl.LightningModule):
         super().__init__()
         self.lr = lr
         self.network = network
-        self.wandb_logger = wandb_logger
+        
         # Logging
+        self.wandb_logger = wandb_logger
         self.name = name
         self.hf_gt_im = hf_gt_im
         self.lf_gt_im = lf_gt_im
@@ -83,12 +88,13 @@ class ModelTrainerModule(pl.LightningModule):
         self.progress_ims = []
         self.scores = []
         self.dice = DiceCELoss(include_background=True,squared_pred = True, reduction='mean', jaccard=False)
+        self.ssim_loss = monai.losses.ssim_loss.SSIMLoss(spatial_dims=3, win_size = (11,11,4))
         self.hf_chunk_size = (96,96,4)
         self.lf_chunk_size = (96//2,96//2,4)
         self.num_classes = 4
         self.config = config
         self.phi = ContrastModulation(self.config)
-        self.M = [1, 1, 1]
+        self.M = [0.75, 0.9, 0.9]
 
         self.dice_score = monai.metrics.DiceMetric()
         self.dice2 = monai.metrics.GeneralizedDiceScore()
@@ -97,6 +103,7 @@ class ModelTrainerModule(pl.LightningModule):
         self.ssim_value = monai.metrics.regression.SSIMMetric(spatial_dims=3, data_range=1.0) #expects shape: BCHWD
         self.temp_list1 = []
         self.temp_list2 = []
+        print("Device_PTL: ", self.device, "M: ", self.M)
         
 
     def configure_optimizers(self):
@@ -109,10 +116,25 @@ class ModelTrainerModule(pl.LightningModule):
         """
         Computes loss for each chunk (batch)
         """
-        mse_loss = self.config["l1"] *  F.mse_loss(pred_lf, lf_gt) 
+        # temp_pred_lf = F.interpolate(output_image_pre.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: check if output_img or output_img_pre
+        # mse_loss = self.config["l1"] * self.ssim_loss(temp_pred_lf.reshape(self.lf_chunk_size).unsqueeze(0).unsqueeze(0), lf_gt.reshape(self.lf_chunk_size).unsqueeze(0).unsqueeze(0))
+        # temp_pred_lf = F.interpolate(output_image_pre.reshape(self.hf_chunk_size).permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0).permute(1,2,0).flatten().unsqueeze(0)
+        mse_loss = (self.config["l1"] *  F.mse_loss(pred_lf, lf_gt)) #+ self.config["l1"] *  F.mse_loss(pred_lf, lf_gt) 
+        
+        # mse1 = self.ssim_loss((pred_lf.reshape(self.lf_chunk_size) * pred_seg_dice[0,1]).unsqueeze(0).unsqueeze(0), (lf_gt.reshape(self.lf_chunk_size) * lf_gt_seg_dice[0,1]).unsqueeze(0).unsqueeze(0))
+        # mse2 = self.ssim_loss((pred_lf.reshape(self.lf_chunk_size) * pred_seg_dice[0,2]).unsqueeze(0).unsqueeze(0), (lf_gt.reshape(self.lf_chunk_size) * lf_gt_seg_dice[0,2]).unsqueeze(0).unsqueeze(0))
+        # mse3 = self.ssim_loss((pred_lf.reshape(self.lf_chunk_size) * pred_seg_dice[0,3]).unsqueeze(0).unsqueeze(0), (lf_gt.reshape(self.lf_chunk_size) * lf_gt_seg_dice[0,3]).unsqueeze(0).unsqueeze(0))
+        # mse0 = self.ssim_loss((pred_lf.reshape(self.lf_chunk_size) * pred_seg_dice[0,0]).unsqueeze(0).unsqueeze(0), (lf_gt.reshape(self.lf_chunk_size) * lf_gt_seg_dice[0,0]).unsqueeze(0).unsqueeze(0))
+        # mse_loss = self.config["l1"] * ((0.2 * mse1) + (0.25 * mse2) + (0.35 * mse3) + (0.1 * mse0))
+
         dice_loss = self.config["l3"] * self.dice(pred_seg_dice, lf_gt_seg_dice)
-        tv_loss_img = self.config["l4"] * total_variation(output_image_pre.reshape(self.hf_chunk_size), reduction ='mean').mean()  
-        tv_loss_seg = self.config["l5"] * sum([total_variation(output_seg_pre[:,i].reshape(self.hf_chunk_size), reduction='mean').mean() for i in range(output_seg_pre.shape[-1])]) #calculating total variation of each tissue and summing them
+        # tv_loss_img = self.config["l4"] * total_variation(output_image_pre.reshape(self.hf_chunk_size), reduction ='mean').mean()  
+        tv_loss_img = (self.config["l4"][0] * (total_variation(output_image_pre.reshape(self.hf_chunk_size)* output_seg_pre[:,0].reshape(self.hf_chunk_size), reduction ='mean').mean())) + (self.config["l4"][1] * (total_variation(output_image_pre.reshape(self.hf_chunk_size)* output_seg_pre[:,1].reshape(self.hf_chunk_size), reduction ='mean').mean())) + (self.config["l4"][2] * (total_variation(output_image_pre.reshape(self.hf_chunk_size)* output_seg_pre[:,2].reshape(self.hf_chunk_size), reduction ='mean').mean())) + (self.config["l4"][3] * (total_variation(output_image_pre.reshape(self.hf_chunk_size)* output_seg_pre[:,3].reshape(self.hf_chunk_size), reduction ='mean').mean()))
+        # tv_loss_img = (self.config["l4"][0] * (total_variation(output_image_pre[:,0].reshape(self.hf_chunk_size), reduction ='mean').mean())) + (self.config["l4"][1] * (total_variation(output_image_pre[:,1].reshape(self.hf_chunk_size), reduction ='mean').mean())) + (self.config["l4"][2] * (total_variation(output_image_pre[:,2].reshape(self.hf_chunk_size), reduction ='mean').mean())) + (self.config["l4"][3] * (total_variation(output_image_pre[:,3].reshape(self.hf_chunk_size), reduction ='mean').mean()))
+        # tv_loss_seg = self.config["l5"] * sum([total_variation(output_seg_pre[:,i].reshape(self.hf_chunk_size), reduction='mean').mean() for i in range(output_seg_pre.shape[-1])]) #calculating total variation of each tissue and summing them
+        tv_loss_seg = self.config["l5"][0] * (total_variation(output_seg_pre[:,0].reshape(self.hf_chunk_size), reduction='mean').mean()) + (self.config["l5"][1] * (total_variation(output_seg_pre[:,1].reshape(self.hf_chunk_size), reduction='mean').mean())) +  (self.config["l5"][2] * (total_variation(output_seg_pre[:,2].reshape(self.hf_chunk_size), reduction='mean').mean())) + (self.config["l5"][3] * (total_variation(output_seg_pre[:,3].reshape(self.hf_chunk_size), reduction='mean').mean()))
+
+        
         loss = dice_loss + mse_loss + tv_loss_img + tv_loss_seg
         
         print("loss: ", loss.item(), dice_loss.item(), mse_loss.item(), tv_loss_img.item(), tv_loss_seg.item())        
@@ -129,7 +151,7 @@ class ModelTrainerModule(pl.LightningModule):
         # pred_hf_im, pred_hf_seg  = pred_im, pred_seg
         
         #lf_img
-        pred_lf_im = (F.interpolate(pred_hf_im.permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0)).permute(1,2,0)
+        pred_lf_im = (F.interpolate(pred_hf_im.permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0)).permute(1,2,0) #Might need to comment out this line
         pred_lf_im = pred_lf_im.reshape(self.lf_gt_im.shape[:-1])
 
         #lf_seg
@@ -158,14 +180,15 @@ class ModelTrainerModule(pl.LightningModule):
         img_score = (0.3 * ssim_) + (0.2 * normalized_psnr_) #calculates image metrics of ULF predictions
         rqs_ = seg_score + img_score
 
-        # return rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_
-        return rqs_, dice2, iou_, ssim_, psnr_, normalized_psnr_
+        return rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_
+        # return rqs_, dice2, iou_, ssim_, psnr_, normalized_psnr_
 
 
 
 
 
     def training_step(self, batch, batch_idx):
+        
         slice_num = self.config["slice"]
         lf_chunk_size = self.lf_chunk_size
 
@@ -173,11 +196,12 @@ class ModelTrainerModule(pl.LightningModule):
         coords = coords.view(-1, coords.shape[-1]) #coord input of each batch
         lf_batch = lf_batch.view(-1, lf_batch.shape[-1]) #lf_gt of each batch
         # print("gt_batch shapes: ",coords.shape, lf_batch.shape, lf_batch_seg.shape)
-        
-        output_image, output_image_pre, output_seg, output_seg_pre = self.forward(coords)
+        # print("Devices: ", self.device, lf_batch_seg.device,  lf_batch.device, coords.device)
+        output_image, output_image_pre, output_seg, output_seg_pre = self.forward(coords) #shape(*hf_chunk), (*hf_chunk), (*hf_chunk, 4), (*hf_chunk, 4)
         # output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
-        output_image_lf = self.phi.forward(output_image, output_seg, self.M)
         
+        output_image_lf = self.phi.forward(output_image, output_seg, self.M)
+        # print("Devices: ", output_image.device, output_image_lf.device)
         pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0).squeeze(0)).reshape(self.lf_chunk_size) for i in range(output_seg.shape[-1])] #downsampling pred_seg
         pred_seg = torch.stack(pred_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
         lf_batch_seg = [lf_batch_seg[:,i].reshape(lf_chunk_size) for i in range(lf_batch_seg[0].shape[0])]
@@ -187,48 +211,53 @@ class ModelTrainerModule(pl.LightningModule):
 
         #Compute Losses
         loss, mse_loss, dice_loss, tv_loss_img, tv_loss_seg = self.compute_loss(output_image_lf, lf_batch, output_image_pre, pred_seg, lf_batch_seg, output_seg_pre)
+        # loss, mse_loss, dice_loss, tv_loss_img, tv_loss_seg = self.compute_loss(output_image_lf, lf_batch, output_image, pred_seg, lf_batch_seg, output_seg_pre) #using output image for regularization
 
-
+        loss_dict = {"total_loss": loss.item(), "mse": mse_loss.item(), "seg": dice_loss.item(), "tv_seg": tv_loss_seg.item(), "tv_img": tv_loss_img.item()}
+        self.wandb_logger.log_metrics(loss_dict, step=self.global_step)
         
         #HF metrics over training 
-        if (self.current_epoch % 20 )== 0: #logging every epoch is expensive ; therefore logging in intervals of 50
+        if (self.current_epoch % 5000 )== 0: #logging every epoch is expensive ; therefore logging in intervals of 50
             pred_im, pred_seg  = self.sample_at_resolution(self.hf_gt_im.shape[:-1]) #TODO: move HF validation metrics to another method
             psnr_hf =  self.psnr_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
             ssim_hf =  self.ssim_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
 
             # print("psnr_hf: ", psnr_hf, "ssim_hf: ", ssim_hf)
             
-            
-            self.temp_list1.append(pred_im)
-            self.temp_list2.append(pred_seg)
-            # print('diff: ', (self.temp_list1[0] - pred_im).mean(), (self.temp_list2[0] - pred_seg).mean())
+
             
             #RQS: LF metrics over training
             rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_ = self.compute_rqs(pred_im, pred_seg)
             
-            final_img = (pred_im * pred_seg[1]) + (pred_im * pred_seg[2]) + (pred_im * pred_seg[3]) 
+            # final_img = (pred_im[1] * pred_seg[1]) + (pred_im[2] * pred_seg[2]) + (pred_im[3] * pred_seg[3]) #+ (pred_im * pred_seg[0]) 
+            final_img = (pred_im * pred_seg[1]) + (pred_im * pred_seg[2]) + (pred_im * pred_seg[3]) #+ (pred_im * pred_seg[0]) 
             
 
             
             # wandb.log(
-            log_dict = { 
+            
+            log_dict_images = { 
             "psnr_hf": psnr_hf.item(), "ssim_hf": ssim_hf.item(),
             "psnr_lf": psnr_.item(), "normalized_psnr_lf": normalized_psnr_.item(), "ssim_lf": ssim_.item(), 
             "dice_lf": dice_.item(), "iou_lf": iou_.item(), "RQS": rqs_.item(),
-            "total_loss": loss.item(), "mse": mse_loss.item(), "seg": dice_loss.item(), "tv_seg": tv_loss_seg.item(), "tv_img": tv_loss_img.item(), 
-            "pred_img": wandb.Image((pred_im[:,:,slice_num].unsqueeze(0)), mode='L'), "pred2_seg": wandb.Image(pred_seg[2,:,:,slice_num].unsqueeze(0), mode='L'), "pred1_seg": wandb.Image(pred_seg[1,:,:,slice_num].unsqueeze(0), mode='L'), "pred3_seg": wandb.Image(pred_seg[3,:,:,slice_num].unsqueeze(0), mode='L'), #adding channel dimension with unsqueeze(0)
+            # "total_loss": loss.item(), "mse": mse_loss.item(), "seg": dice_loss.item(), "tv_seg": tv_loss_seg.item(), "tv_img": tv_loss_img.item(), 
+            "pred_img": wandb.Image((pred_im[:,:,slice_num].unsqueeze(0)), mode='L'), 
             "final_img": wandb.Image((final_img[:,:,slice_num].unsqueeze(0)), mode='L'),
+
+            "pred1_seg": wandb.Image(pred_seg[1,:,:,slice_num].unsqueeze(0), mode='L'), 
+            "pred2_seg": wandb.Image(pred_seg[2,:,:,slice_num].unsqueeze(0), mode='L'), 
+            "pred3_seg": wandb.Image(pred_seg[3,:,:,slice_num].unsqueeze(0), mode='L'), #adding channel dimension with unsqueeze(0)
             "wm_img": wandb.Image(((pred_im * pred_seg[1])[:,:,slice_num].unsqueeze(0)), mode='L'),
             "gm_img": wandb.Image(((pred_im * pred_seg[2])[:,:,slice_num].unsqueeze(0)), mode='L'),
             "csf_img": wandb.Image(((pred_im * pred_seg[3])[:,:,slice_num].unsqueeze(0)), mode='L'),
             "bg_img": wandb.Image(((pred_im * pred_seg[0])[:,:,slice_num].unsqueeze(0)), mode='L'),
+            # "wm_img": wandb.Image(((pred_im[1] * pred_seg[1])[:,:,slice_num].unsqueeze(0)), mode='L'),
+            # "gm_img": wandb.Image(((pred_im[2] * pred_seg[2])[:,:,slice_num].unsqueeze(0)), mode='L'),
+            # "csf_img": wandb.Image(((pred_im[3] * pred_seg[3])[:,:,slice_num].unsqueeze(0)), mode='L'),
+            # "bg_img": wandb.Image(((pred_im[0] * pred_seg[0])[:,:,slice_num].unsqueeze(0)), mode='L'),
             }
+            self.wandb_logger.log_metrics(log_dict_images)#, step=self.global_step)
             
-            # log_dict = {
-            # "psnr_hf": psnr_hf.item(), "ssim_hf": ssim_hf.item(),
-            # "final_img": wandb.Image((final_img[:,:,slice_num].unsqueeze(0)), mode='L'),}
-            # wandb_logger.log_image(key="pred", images=[norm(pred_im[:,:,90]).unsqueeze(0), norm(pred_im[:,:,slice_num]).unsqueeze(0), pred_seg[2,:,:,slice_num].unsqueeze(0)], caption=["slice: 90", "slice: slice_num", "seg_2_slice: slice_num"]) #adding channel dimension with unsqueeze(0)
-            self.wandb_logger.log_metrics(log_dict, step=self.global_step)
         return loss
 
 
@@ -241,10 +270,21 @@ class ModelTrainerModule(pl.LightningModule):
         coords_norm = coords / torch.tensor(resolution, device=self.device) * 2 - 1
         coords_norm_ = coords_norm.reshape(-1, coords.shape[-1])
         predictions_, _, pred_seg_, _ = self.forward(coords_norm_)
-        predictions = predictions_.reshape(resolution)
         resolution_seg = list(resolution) + [pred_seg_.shape[-1]] #adding num_tissues to the resolution shape
+        predictions = predictions_.reshape(resolution)
+        # predictions = predictions_.reshape(resolution_seg)
+        # predictions = [predictions[:,:,:,i].reshape(resolution) for i in range(predictions.shape[-1])]
+        # predictions = torch.stack(predictions, axis = 0)
+
+
+
+        
         pred_seg_ = pred_seg_.reshape(resolution_seg)
         pred_seg = [pred_seg_[:,:,:,i].reshape(resolution) for i in range(pred_seg_.shape[-1])]
         pred_seg = torch.stack(pred_seg, axis = 0)
+
+
+
+        # predictions = (predictions[1] * pred_seg[1]) + (predictions[2] * pred_seg[2]) + (predictions[3] * pred_seg[3]) #+ (predictions[0] * pred_seg[0]) 
         #output shapes- predictions: (H, W, D,); pred_seg: (num_classes, H, W, D)
         return predictions, pred_seg

@@ -22,7 +22,7 @@ from Data.ImagePreparation import ImagePreparation
 
 
 
-def get_lf_observed_segmentations(device, dataset_num):
+def get_lf_observed_segmentations(dataset_num):
     lf_wm_location = "./Data/ixi/T1/" + str(dataset_num) + "/ulf/fast_pve_2.nii.gz"
     lf_gm_location = "./Data/ixi/T1/" + str(dataset_num) + "/ulf/fast_pve_1.nii.gz"
     lf_csf_location = "./Data/ixi/T1/" + str(dataset_num) + "/ulf/fast_pve_0.nii.gz"
@@ -33,15 +33,15 @@ def get_lf_observed_segmentations(device, dataset_num):
     # print(lf_wm_seg.shape)
     total_lf_seg = lf_wm_seg + lf_gm_seg + lf_csf_seg
     lf_bg_seg = 1 - total_lf_seg
-    return lf_wm_seg.flatten().to(torch.float32).to(device).unsqueeze(0), lf_gm_seg.flatten().to(torch.float32).to(device).unsqueeze(0), lf_csf_seg.flatten().to(torch.float32).to(device).unsqueeze(0), lf_bg_seg.flatten().to(torch.float32).to(device).unsqueeze(0)
-
+    # return lf_wm_seg.flatten().to(torch.float32).to(device).unsqueeze(0), lf_gm_seg.flatten().to(torch.float32).to(device).unsqueeze(0), lf_csf_seg.flatten().to(torch.float32).to(device).unsqueeze(0), lf_bg_seg.flatten().to(torch.float32).to(device).unsqueeze(0)
+    return lf_wm_seg.flatten().to(torch.float32).unsqueeze(0), lf_gm_seg.flatten().to(torch.float32).unsqueeze(0), lf_csf_seg.flatten().to(torch.float32).unsqueeze(0), lf_bg_seg.flatten().to(torch.float32).unsqueeze(0)
 
 
 
 
 
 def get_hf_observed_segmentations(dataset_num, config):
-    folder = './Data/ixi/T1/' + str(dataset_num) + "/"
+    folder = './Data/ixi/T1/' + str(dataset_num) + "/hf/"
     slice = config["slice"]
     (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder)
     (wm_obs_seg, gm_obs_seg, csf_obs_seg, bg_obs_seg) = get_hf_tissue_seg(wm_nib, gm_nib, csf_nib)
@@ -56,12 +56,12 @@ def get_hf_observed_segmentations(dataset_num, config):
 def load_data(dataset_num, config=default_config):
     slice = default_config["slice"]
     # random.seed(9600) #For Reproducibility -> using pl.seed_everything in main()
-    device = get_device() #Returns either MPS/CUDA/CPU depending on availability
+    # device = get_device() #Returns either MPS/CUDA/CPU depending on availability
 
-    lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = get_lf_observed_segmentations(device, dataset_num) #Load ULF Observed Segmentations
+    lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = get_lf_observed_segmentations(dataset_num) #Load ULF Observed Segmentations
     
     #Load HF observed
-    hf_loc = "./Data/ixi/T1/" + str(dataset_num)+ "/fast_restore.nii.gz"
+    hf_loc = "./Data/ixi/T1/" + str(dataset_num)+ "/hf/fast_restore.nii.gz"
     hf_observed = nib.load(hf_loc).get_fdata()
     
     (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), (wm_snr, gm_snr, csf_snr), M = contrast_forward(dataset_num) #Generating ULF observed
@@ -79,7 +79,7 @@ def load_data(dataset_num, config=default_config):
     
 
     
-    lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = get_lf_observed_segmentations(device, dataset_num) #Load ULF Observed Segmentations
+    lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = get_lf_observed_segmentations(dataset_num) #Load ULF Observed Segmentations
     lf_observed_seg_dice = torch.stack((lf_bg_seg[0].reshape(config["size_lf"]), lf_wm_seg[0].reshape(config["size_lf"]), lf_gm_seg[0].reshape(config["size_lf"]), lf_csf_seg[0].reshape(config["size_lf"])), dim=0).unsqueeze(0)
  
 

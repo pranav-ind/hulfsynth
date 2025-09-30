@@ -28,7 +28,7 @@ import time
 
 def read_imgs(folder):
     #Expected Folder Name: "./data_" + str(dataset_num) + "/". Returns ground truth image and segmentations in nib format
-    folder = folder + "fast"
+    folder = folder + "hf/fast"
     csf_nib = nib.load(folder + "_pve_0.nii.gz") 
     gm_nib = nib.load(folder + "_pve_1.nii.gz") 
     wm_nib = nib.load(folder + "_pve_2.nii.gz") 
@@ -73,7 +73,7 @@ def calc_ixi_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset):
         gm_roi_pixels = img_nib.get_fdata()[24:29, 96:106, slice_num][gm_nib.get_fdata()[24:29, 96:106, slice_num]>0.9]
         csf_roi_pixels = img_nib.get_fdata()[84:88, 128:136, slice_num][csf_nib.get_fdata()[84:88, 128:136, slice_num]>0.9]
     
-    noise_file = "./Data/ixi/T1/" + str(dataset) + "/raw.nii.gz"
+    noise_file = "./Data/ixi/T1/" + str(dataset) + "/hf/raw.nii.gz"
     noise = nib.load(noise_file)
     # print("BG Noise in different regions :", noise.get_fdata()[:20,:20,95].std(), noise.get_fdata()[150:175,150:175,95].std(), noise.get_fdata()[155:,:25,95].std(), noise.get_fdata()[:25,150:170,95].std()) #Mean of all 4 regions in background
     
