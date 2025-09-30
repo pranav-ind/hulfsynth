@@ -72,11 +72,11 @@ if __name__ == '__main__':
     config = copy.deepcopy(default_config)
     
     config["in_features"] = 3
-    config["l1"] = float(args.l1) #100 #mse
-    config["l3"] = float(args.l3) #20 #seg
-    config["l4"] = args.l4 #0.01 #tv_img
-    config["l5"] = args.l5 # 0.1 #tv_seg
-    config["epochs"] = int(args.epochs)
+    # config["l1"] = float(args.l1) #100 #mse
+    # config["l3"] = float(args.l3) #20 #seg
+    # config["l4"] = args.l4 #0.01 #tv_img
+    # config["l5"] = args.l5 # 0.1 #tv_seg
+    # config["epochs"] = int(args.epochs)
 
     config["size"] = (182, 218, 182)
     config["size_lf"] = (182//2, 218//2, 182)
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     # print("gt_image: ", gt_image.shape, "lf_gt: ", lf_gt.shape, "lf_gt_seg_dice: ", lf_gt_seg_dice.shape)
     # print('gt_image, lf_gt loaded')
 
-    
+    '''
     dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
     dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
     
@@ -123,4 +123,4 @@ if __name__ == '__main__':
                                     config = config,
                                     lr=LEARNING_RATE,
                                     name='SIREN',)
-    
+    '''

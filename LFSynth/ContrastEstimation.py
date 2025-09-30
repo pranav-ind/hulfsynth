@@ -82,12 +82,13 @@ def calc_ixi_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset):
     csf_snr = csf_roi_pixels.mean()/ (std_bg * rayleigh_correction)
     gm_snr = gm_roi_pixels.mean()/ (std_bg * rayleigh_correction)
     wm_snr = wm_roi_pixels.mean()/ (std_bg * rayleigh_correction)
-
+    print("SNRs- WM: ", wm_snr, "GM: ", gm_snr, "CSF: ", csf_snr, "BG (std): ", std_bg)
 
     Ccg = abs(csf_snr - gm_snr) 
     Ccw = abs(csf_snr - wm_snr)
     Cgw = abs(gm_snr - wm_snr)
 
+    print("CNRs- WG: ", Cgw, "WC: ", Ccw, "GC: ", Ccg)
     return (wm_snr, gm_snr, csf_snr)
 
 
@@ -149,9 +150,10 @@ def toy_values(wm_snr, gm_snr, csf_snr, dataset):
     else:
         # known_m = np.array([0.4, 0.5, 0.2]) #dataset = 2
         known_m = np.array([0.5, 0.6, 0.2]) #dataset = 1
-    s = np.array([[wm_snr, 0, -csf_snr], [wm_snr, -gm_snr, 0], [0, gm_snr, -csf_snr] ]) #SNR matrix
+    # s = np.array([[wm_snr, 0, -csf_snr], [wm_snr, -gm_snr, 0], [0, gm_snr, -csf_snr] ]) #SNR matrix
+    s = np.array([[wm_snr, -gm_snr, 0], [wm_snr, 0, -csf_snr], [0, gm_snr, -csf_snr] ]) #SNR matrix
     c = toy_c = s @known_m
-    print("known_m = ", known_m)
+    print("known_m = ", known_m, "c vector: ",c)
     return s, c
 
 
@@ -282,13 +284,15 @@ def forward(dataset_num=1):
     (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
 
     s, c = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
-    print(s,c)
+    c = np.array([9.03, 27.17, 18.14, ])
+    print("SNR matrix:", s, "Target Contrast: " , c)
     grid = GridSearch(s,c)
     grid_results = grid.solve()
     grid_results = grid.easy_results(grid_results)
-    print(grid_results)
+    # print(grid_results)
     M = grid.select_solution(grid_results)
     print("Solution : ", M)
+    print("Target Contrast: " , c, "Achieved contrast: ", s@M)
     (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like) = recombine(wm, gm, csf, bg, M)
     # lf_like = lf_like + np.random.normal(2, 0.75, size=lf_like.shape) #adding gaussian noise
     lf_like = lf_like + add_rician(lf_like.shape) #adding rician noise

@@ -65,7 +65,7 @@ def load_data(dataset_num, config=default_config):
     hf_observed = nib.load(hf_loc).get_fdata()
     
     (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), (wm_snr, gm_snr, csf_snr), M = contrast_forward(dataset_num) #Generating ULF observed
-    print(wm_lf_like.shape, lf_like.shape, wm_seg.shape, wm_snr, M)
+    # print(wm_lf_like.shape, lf_like.shape, wm_seg.shape, wm_snr, M)
     #Load ULF observed
     lf_observed = norm(lf_like) #normalized
     
@@ -86,7 +86,7 @@ def load_data(dataset_num, config=default_config):
     # img_prep_obj = ImagePreparation(lf_observed_seg_dice, config["size_lf"][0], config["size_lf"][1], is_ffe=config["ffe"]) #Image Preparation Object
     # lf_dataloader = DataLoader(img_prep_obj, batch_size=1, pin_memory=True, num_workers=0)
     # config["in_features"] = 256 if(config["ffe"]==True) else  2
-    print(lf_wm_seg.shape, lf_observed_seg_dice.shape)
+    # print(lf_wm_seg.shape, lf_observed_seg_dice.shape)
 
     # return hf_observed, lf_dataloader, lf_observed, M #might need to uncomment this. lf_dataloader is the default used everywhere
     return hf_observed, lf_observed, lf_observed_seg_dice, M #might need to comment this
