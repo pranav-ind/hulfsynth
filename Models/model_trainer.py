@@ -9,6 +9,7 @@ import numpy as np
 from typing import Tuple, List, Optional
 import matplotlib.pyplot as plt
 from datetime import datetime
+import math
 
 import lightning as pl
 from lightning.pytorch.loggers import WandbLogger
@@ -40,8 +41,8 @@ class ContrastModulation:
     #Weighted Sum of Segmentation Probabilities and Image Intensities
 
     # imgs_list = [F.interpolate((output_seg[:,i].reshape(hf_chunk_size) * output_image[:,i].reshape(hf_chunk_size)).permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0).permute(1,2,0) for i in range(output_seg.shape[-1])]
-    
-    imgs_list = [(F.interpolate((output_seg[:,i].reshape(hf_chunk_size) * output_image.reshape(hf_chunk_size)).flatten().unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0)) for i in range(output_seg.shape[-1])]
+    # imgs_list = [(F.interpolate((output_seg[:,i].reshape(hf_chunk_size) * output_image.reshape(hf_chunk_size)).flatten().unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0)) for i in range(output_seg.shape[-1])]
+    imgs_list = [(F.interpolate((output_seg[:,i].reshape(hf_chunk_size) * output_image.reshape(hf_chunk_size)).flatten().unsqueeze(0).unsqueeze(0), size=lf_size).squeeze(0)) for i in range(output_seg.shape[-1])]
     # F.interpolate(output_image_pre.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0)
     output_image = output_image.to('cpu')
     output_seg = output_seg.to('cpu')
@@ -91,6 +92,8 @@ class ModelTrainerModule(pl.LightningModule):
         self.ssim_loss = monai.losses.ssim_loss.SSIMLoss(spatial_dims=3, win_size = (11,11,4))
         self.hf_chunk_size = (96,96,4)
         self.lf_chunk_size = (96//2,96//2,4)
+        self.points_num = 96*96*4
+        self.downsampled_points = 48*48*4
         self.num_classes = 4
         self.config = config
         self.phi = ContrastModulation(self.config)
@@ -151,11 +154,13 @@ class ModelTrainerModule(pl.LightningModule):
         # pred_hf_im, pred_hf_seg  = pred_im, pred_seg
         
         #lf_img
-        pred_lf_im = (F.interpolate(pred_hf_im.permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0)).permute(1,2,0) #Might need to comment out this line
+        # pred_lf_im = (F.interpolate(pred_hf_im.permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0)).permute(1,2,0) #Might need to comment out this line
+        pred_lf_im = (F.interpolate(pred_hf_im.permute(2,0,1).unsqueeze(0), size=self.lf_gt_im.shape[:-1]).squeeze(0)).permute(1,2,0) #Might need to comment out this line
         pred_lf_im = pred_lf_im.reshape(self.lf_gt_im.shape[:-1])
 
         #lf_seg
-        pred_lf_seg = [(F.interpolate(pred_hf_seg[i].permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0)).permute(1,2,0).reshape(self.lf_gt_seg.shape[2:]) for i in range(pred_hf_seg.shape[0])] #downsampling pred_seg
+        # pred_lf_seg = [(F.interpolate(pred_hf_seg[i].permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0)).permute(1,2,0).reshape(self.lf_gt_seg.shape[2:]) for i in range(pred_hf_seg.shape[0])] #downsampling pred_seg
+        pred_lf_seg = [(F.interpolate(pred_hf_seg[i].permute(2,0,1).unsqueeze(0), size=self.lf_gt_im.shape[:-1]).squeeze(0)).permute(1,2,0).reshape(self.lf_gt_seg.shape[2:]) for i in range(pred_hf_seg.shape[0])] #downsampling pred_seg
         pred_lf_seg = torch.stack(pred_lf_seg,axis = 0) # shape(4 *H_lf, *W_lf, *D)
 
         #hf_seg
@@ -199,10 +204,11 @@ class ModelTrainerModule(pl.LightningModule):
         # print("Devices: ", self.device, lf_batch_seg.device,  lf_batch.device, coords.device)
         output_image, output_image_pre, output_seg, output_seg_pre = self.forward(coords) #shape(*hf_chunk), (*hf_chunk), (*hf_chunk, 4), (*hf_chunk, 4)
         # output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
-        
         output_image_lf = self.phi.forward(output_image, output_seg, self.M)
+        
         # print("Devices: ", output_image.device, output_image_lf.device)
-        pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0).squeeze(0)).reshape(self.lf_chunk_size) for i in range(output_seg.shape[-1])] #downsampling pred_seg
+        # pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0).squeeze(0)).reshape(self.lf_chunk_size) for i in range(output_seg.shape[-1])] #downsampling pred_seg
+        pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), size=self.downsampled_points).squeeze(0).squeeze(0)).reshape(self.lf_chunk_size) for i in range(output_seg.shape[-1])] #downsampling pred_seg
         pred_seg = torch.stack(pred_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
         lf_batch_seg = [lf_batch_seg[:,i].reshape(lf_chunk_size) for i in range(lf_batch_seg[0].shape[0])]
         lf_batch_seg = torch.stack(lf_batch_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)

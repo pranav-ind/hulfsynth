@@ -13,7 +13,7 @@ class RandomPointsDataset(Dataset):
     Samples random voxel indices from the LF image, retrieves voxel values and segmentation labels, downsamples them, and returns the normalized coordinates and voxel values.
     Adopted from: https://github.com/INR4MICCAI/INRTutorial/tree/main
     """
-    def __init__(self, hf_image: torch.Tensor, lf_image:torch.Tensor, lf_gt_seg_dice:torch.Tensor, points_num: int = 96*96*4):
+    def __init__(self, hf_image: torch.Tensor, lf_image:torch.Tensor, lf_gt_seg_dice:torch.Tensor, points_num: int = 96*96*4, downsampled_points: int = 48*48*4):
 
         super().__init__()
         self.device = get_device()
@@ -24,6 +24,7 @@ class RandomPointsDataset(Dataset):
         self.lf_image = lf_image.to(self.device)  # (H, W, ..., C)
         self.lf_gt_seg_dice = lf_gt_seg_dice.permute(1,2,3,4,0).to(self.device) #(tissues, H,W,D, C)
         self.dim_sizes = self.lf_image.shape[:-1]  # Size of each spatial dimension
+        self.downsampled_points = downsampled_points
         self.coord_size = len(self.hf_image.shape[:-1])  # Number of spatial dimensions
         # self.value_size = self.lf_image.shape[-1]  # Channel size
 
@@ -57,10 +58,13 @@ class RandomPointsDataset(Dataset):
         voxel_values_seg = torch.stack(voxel_values_seg,axis = 0) #list to stack
         
         #Downsampling to match ULF resolution
-        voxel_values = F.interpolate(voxel_values.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0) #downsampling lf_gt
-        voxel_values_seg = [F.interpolate(voxel_values_seg[i].unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0) for i in range(self.lf_gt_seg_dice.shape[0])] #downsampling lf_gt_seg
+        # voxel_values = F.interpolate(voxel_values.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0) #downsampling lf_gt
+        voxel_values = F.interpolate(voxel_values.unsqueeze(0).unsqueeze(0).squeeze(-1), size=self.downsampled_points).squeeze(0).squeeze(0) #downsampling lf_gt
+        print(voxel_values_seg.shape)
+        # voxel_values_seg = [F.interpolate(voxel_values_seg[i].unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0) for i in range(self.lf_gt_seg_dice.shape[0])] #downsampling lf_gt_seg
+        voxel_values_seg = [F.interpolate(voxel_values_seg[i].unsqueeze(0).unsqueeze(0).squeeze(-1), size=self.downsampled_points).squeeze(0).squeeze(0) for i in range(self.lf_gt_seg_dice.shape[0])] #downsampling lf_gt_seg
         voxel_values_seg = torch.stack(voxel_values_seg,axis = 0)
-        
+        print(voxel_values_seg.shape)
 
         #Normalizing coords
         point_coords = torch.stack(point_indices, dim=-1) # Convert point indices into normalized [-1.0, 1.0] coordinates
