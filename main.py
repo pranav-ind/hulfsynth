@@ -83,7 +83,7 @@ if __name__ == '__main__':
     config["size_lf"] = (182//2, 218//2, 182)
     config["slice"] = 90
     dataset_num = 102 #ixi sample dataset
-
+    config["is_new_contrast"] = False #make this true when using new c vector
     
 
     hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_data(dataset_num, config) #uncomment

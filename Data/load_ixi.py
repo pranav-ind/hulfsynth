@@ -62,7 +62,7 @@ def get_hf_observed_segmentations(dataset_num, config):
 
 
 def load_data(dataset_num, config=default_config):
-    slice = default_config["slice"]
+    slice = config["slice"]
     # random.seed(9600) #For Reproducibility -> using pl.seed_everything in main()
     # device = get_device() #Returns either MPS/CUDA/CPU depending on availability
 
@@ -73,11 +73,12 @@ def load_data(dataset_num, config=default_config):
     hf_observed = nib.load(hf_loc).get_fdata()
     
     (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), (wm_snr, gm_snr, csf_snr), M = contrast_forward(dataset_num) #Generating ULF observed
+    config["M"] = M
     # print(wm_lf_like.shape, lf_like.shape, wm_seg.shape, wm_snr, M)
     #Load ULF observed
     lf_observed = norm(lf_like) #normalized
     
-    config['is_new_contrast'] = True
+    
     if(config["is_new_contrast"]):
         noise_threshold = 17.0 #Removing bg pixels for FSL FAST; Alternatively, use FSL SUSAN to remove bg noise
         lf_like[lf_like< noise_threshold] = 0
