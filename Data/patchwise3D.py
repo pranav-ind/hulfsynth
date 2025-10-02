@@ -60,11 +60,10 @@ class RandomPointsDataset(Dataset):
         #Downsampling to match ULF resolution
         # voxel_values = F.interpolate(voxel_values.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0) #downsampling lf_gt
         voxel_values = F.interpolate(voxel_values.unsqueeze(0).unsqueeze(0).squeeze(-1), size=self.downsampled_points).squeeze(0).squeeze(0) #downsampling lf_gt
-        print(voxel_values_seg.shape)
         # voxel_values_seg = [F.interpolate(voxel_values_seg[i].unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0).squeeze(0) for i in range(self.lf_gt_seg_dice.shape[0])] #downsampling lf_gt_seg
         voxel_values_seg = [F.interpolate(voxel_values_seg[i].unsqueeze(0).unsqueeze(0).squeeze(-1), size=self.downsampled_points).squeeze(0).squeeze(0) for i in range(self.lf_gt_seg_dice.shape[0])] #downsampling lf_gt_seg
         voxel_values_seg = torch.stack(voxel_values_seg,axis = 0)
-        print(voxel_values_seg.shape)
+        
 
         #Normalizing coords
         point_coords = torch.stack(point_indices, dim=-1) # Convert point indices into normalized [-1.0, 1.0] coordinates

@@ -1,0 +1,22 @@
+[34m[1mwandb[0m: logging graph, to disable use `wandb.watch(log_graph=False)`
+Traceback (most recent call last):
+  File "/its/home/pi58/projects/hulfsynth/hulfsynth/temp.py", line 147, in <module>
+    trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger, accelerator='gpu', devices=1, strategy='ddp')
+  File "/its/home/pi58/anaconda3/envs/mri_recon/lib/python3.13/site-packages/lightning/pytorch/utilities/argparse.py", line 70, in insert_env_defaults
+    return fn(self, **kwargs)
+  File "/its/home/pi58/anaconda3/envs/mri_recon/lib/python3.13/site-packages/lightning/pytorch/trainer/trainer.py", line 404, in __init__
+    self._accelerator_connector = _AcceleratorConnector(
+                                  ~~~~~~~~~~~~~~~~~~~~~^
+        devices=devices,
+        ^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+        plugins=plugins,
+        ^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/its/home/pi58/anaconda3/envs/mri_recon/lib/python3.13/site-packages/lightning/pytorch/trainer/connectors/accelerator_connector.py", line 144, in __init__
+    self._accelerator_flag = self._choose_gpu_accelerator_backend()
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/its/home/pi58/anaconda3/envs/mri_recon/lib/python3.13/site-packages/lightning/pytorch/trainer/connectors/accelerator_connector.py", line 348, in _choose_gpu_accelerator_backend
+    raise MisconfigurationException("No supported gpu backend found!")
+lightning.fabric.utilities.exceptions.MisconfigurationException: No supported gpu backend found!

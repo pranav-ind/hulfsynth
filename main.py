@@ -38,8 +38,7 @@ from LFSynth.ContrastModulation import ContrastModulation
 
 from Data.patchwise3D import RandomPointsDataset
 
-POINTS_PER_SAMPLE = 96*96*4
-lf_points_per_sample = 48*48*4
+
 
 def wandb_setup(siren_module):
     wandb.login()
@@ -84,7 +83,11 @@ if __name__ == '__main__':
     config["slice"] = 90
     dataset_num = 102 #ixi sample dataset
     config["is_new_contrast"] = False #make this true when using new c vector
-    
+    config["M"] = [1, 1, 1]
+    config["points_num"] = 96*96*4
+    config["downsampled_points"] = 48*48*4
+    config["hf_chunk_size"] = (96, 96, 4)
+    config["lf_chunk_size"] = (96//2, 96//2, 4)
 
     hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_data(dataset_num, config) #uncomment
     gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
@@ -94,8 +97,9 @@ if __name__ == '__main__':
     # print("gt_image: ", gt_image.shape, "lf_gt: ", lf_gt.shape, "lf_gt_seg_dice: ", lf_gt_seg_dice.shape)
     print('gt_image, lf_gt loaded')
 
-
-    dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
+    POINTS_PER_SAMPLE = config["points_num"]
+    lf_points_per_sample = config["downsampled_points"]
+    dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE, downsampled_points = lf_points_per_sample)
     dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
     
     
@@ -141,7 +145,4 @@ if __name__ == '__main__':
     print("locally saved model to: ", model_saving_path)
     # wandb.save(model_saving_path)
 
-    wandb_logger.experiment.log_model(path=model_saving_path, name="model")
-    
-    print(config)
-    
+    wandb_logger.experiment.log_model(path=model_saving_path, name="model")    

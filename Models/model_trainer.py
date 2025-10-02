@@ -30,9 +30,11 @@ class ContrastModulation:
   #2D
   def __init__(self, config):
     self.hf_chunk_size = config["hf_chunk_size"] #(96, 96, 4)
-    self.chunk_size_lf = config["chunk_size_lf"] #(96//2, 96//2, 4)
+    self.lf_chunk_size = config["lf_chunk_size"] #(96//2, 96//2, 4)
     self.hf_size = config["size"] #(172, 192, 192)
     self.lf_size = config["size_lf"] #(172//2, 192//2, 192)
+    self.points_num = config["points_num"] #96*96*4
+    self.downsampled_points = config["downsampled_points"] #48*48*4
 
   
   def forward(self, output_image, output_seg, M):
@@ -42,15 +44,15 @@ class ContrastModulation:
 
     # imgs_list = [F.interpolate((output_seg[:,i].reshape(hf_chunk_size) * output_image[:,i].reshape(hf_chunk_size)).permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0).permute(1,2,0) for i in range(output_seg.shape[-1])]
     # imgs_list = [(F.interpolate((output_seg[:,i].reshape(hf_chunk_size) * output_image.reshape(hf_chunk_size)).flatten().unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0)) for i in range(output_seg.shape[-1])]
-    imgs_list = [(F.interpolate((output_seg[:,i].reshape(hf_chunk_size) * output_image.reshape(hf_chunk_size)).flatten().unsqueeze(0).unsqueeze(0), size=lf_size).squeeze(0)) for i in range(output_seg.shape[-1])]
+    imgs_list = [(F.interpolate((output_seg[:,i].reshape(hf_chunk_size) * output_image.reshape(hf_chunk_size)).flatten().unsqueeze(0).unsqueeze(0), size=self.downsampled_points).squeeze(0)) for i in range(output_seg.shape[-1])]
     # F.interpolate(output_image_pre.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0)
     output_image = output_image.to('cpu')
     output_seg = output_seg.to('cpu')
 
-    bg_img = (imgs_list[0]).reshape(self.chunk_size_lf)
-    wm_img = (imgs_list[1]).reshape(self.chunk_size_lf) * M[0]
-    gm_img = (imgs_list[2]).reshape(self.chunk_size_lf) * M[1]
-    csf_img = (imgs_list[3]).reshape(self.chunk_size_lf) * M[2] 
+    bg_img = (imgs_list[0]).reshape(self.lf_chunk_size)
+    wm_img = (imgs_list[1]).reshape(self.lf_chunk_size) * M[0]
+    gm_img = (imgs_list[2]).reshape(self.lf_chunk_size) * M[1]
+    csf_img = (imgs_list[3]).reshape(self.lf_chunk_size) * M[2] 
     
 
     del imgs_list
@@ -77,7 +79,7 @@ class ModelTrainerModule(pl.LightningModule):
         super().__init__()
         self.lr = lr
         self.network = network
-        
+        self.config = config
         # Logging
         self.wandb_logger = wandb_logger
         self.name = name
@@ -90,14 +92,14 @@ class ModelTrainerModule(pl.LightningModule):
         self.scores = []
         self.dice = DiceCELoss(include_background=True,squared_pred = True, reduction='mean', jaccard=False)
         self.ssim_loss = monai.losses.ssim_loss.SSIMLoss(spatial_dims=3, win_size = (11,11,4))
-        self.hf_chunk_size = (96,96,4)
-        self.lf_chunk_size = (96//2,96//2,4)
-        self.points_num = 96*96*4
-        self.downsampled_points = 48*48*4
+        self.hf_chunk_size = config["hf_chunk_size"] #(96,96,4)
+        self.lf_chunk_size = config["lf_chunk_size"] #(96//2,96//2,4)
+        self.points_num = config["points_num"] #96*96*4
+        self.downsampled_points = config["downsampled_points"] #48*48*4
         self.num_classes = 4
-        self.config = config
+        
         self.phi = ContrastModulation(self.config)
-        self.M = config["M"] #[0.75, 0.9, 0.9]
+        self.M = [1, 1, 1] #config["M"] #[0.75, 0.9, 0.9]
 
         self.dice_score = monai.metrics.DiceMetric()
         self.dice2 = monai.metrics.GeneralizedDiceScore()
@@ -155,12 +157,13 @@ class ModelTrainerModule(pl.LightningModule):
         
         #lf_img
         # pred_lf_im = (F.interpolate(pred_hf_im.permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0)).permute(1,2,0) #Might need to comment out this line
-        pred_lf_im = (F.interpolate(pred_hf_im.permute(2,0,1).unsqueeze(0), size=self.lf_gt_im.shape[:-1]).squeeze(0)).permute(1,2,0) #Might need to comment out this line
+        pred_lf_im = (F.interpolate(pred_hf_im.permute(2,0,1).unsqueeze(0), size=self.lf_gt_im.shape[:-2]).squeeze(0)).permute(1,2,0) #Might need to comment out this line
         pred_lf_im = pred_lf_im.reshape(self.lf_gt_im.shape[:-1])
+        
 
         #lf_seg
         # pred_lf_seg = [(F.interpolate(pred_hf_seg[i].permute(2,0,1).unsqueeze(0), scale_factor=0.5).squeeze(0)).permute(1,2,0).reshape(self.lf_gt_seg.shape[2:]) for i in range(pred_hf_seg.shape[0])] #downsampling pred_seg
-        pred_lf_seg = [(F.interpolate(pred_hf_seg[i].permute(2,0,1).unsqueeze(0), size=self.lf_gt_im.shape[:-1]).squeeze(0)).permute(1,2,0).reshape(self.lf_gt_seg.shape[2:]) for i in range(pred_hf_seg.shape[0])] #downsampling pred_seg
+        pred_lf_seg = [(F.interpolate(pred_hf_seg[i].permute(2,0,1).unsqueeze(0), size=self.lf_gt_im.shape[:-2]).squeeze(0)).permute(1,2,0).reshape(self.lf_gt_seg.shape[2:]) for i in range(pred_hf_seg.shape[0])] #downsampling pred_seg
         pred_lf_seg = torch.stack(pred_lf_seg,axis = 0) # shape(4 *H_lf, *W_lf, *D)
 
         #hf_seg
@@ -206,14 +209,14 @@ class ModelTrainerModule(pl.LightningModule):
         # output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
         output_image_lf = self.phi.forward(output_image, output_seg, self.M)
         
-        # print("Devices: ", output_image.device, output_image_lf.device)
+        
         # pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0).squeeze(0)).reshape(self.lf_chunk_size) for i in range(output_seg.shape[-1])] #downsampling pred_seg
         pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), size=self.downsampled_points).squeeze(0).squeeze(0)).reshape(self.lf_chunk_size) for i in range(output_seg.shape[-1])] #downsampling pred_seg
         pred_seg = torch.stack(pred_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
         lf_batch_seg = [lf_batch_seg[:,i].reshape(lf_chunk_size) for i in range(lf_batch_seg[0].shape[0])]
         lf_batch_seg = torch.stack(lf_batch_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
         
-        # print('Outputs: ', output_image.shape, output_seg.shape, output_image_lf.shape, lf_batch_seg.shape)
+        
 
         #Compute Losses
         loss, mse_loss, dice_loss, tv_loss_img, tv_loss_seg = self.compute_loss(output_image_lf, lf_batch, output_image_pre, pred_seg, lf_batch_seg, output_seg_pre)
@@ -293,4 +296,5 @@ class ModelTrainerModule(pl.LightningModule):
 
         # predictions = (predictions[1] * pred_seg[1]) + (predictions[2] * pred_seg[2]) + (predictions[3] * pred_seg[3]) #+ (predictions[0] * pred_seg[0]) 
         #output shapes- predictions: (H, W, D,); pred_seg: (num_classes, H, W, D)
+
         return predictions, pred_seg
