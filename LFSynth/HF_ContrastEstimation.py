@@ -159,18 +159,21 @@ def get_m(dataset_num='0011', target_type='hf'):
     #m^{ULF} = get_m (c^{HF}, S^{ULF}) i.e., if target_type == ULF then S matrix should be from HF and if target_type == HF then S matrix should be ULF ;
     if(target_type == 'ulf'):
         S_type = 'hf'
+        upper_bound = 1.0
     else:
         S_type = 'ulf'
+        upper_bound = np.inf
     rayleigh_correction = 1.53
     _, S_list = get_rois(dataset_num, field_type=S_type)
     s = np.array([[S_list[0], -S_list[1], 0], [S_list[0], 0, -S_list[2]], [0, S_list[1], -S_list[2]]]) #SNR matrix #S_list[0] = WM, S_list[1] = GM, S_list[2] = CSF
     target_c = get_target_c(dataset_num, target_type)
-    print("s, c: ", s.shape, target_c.shape)
-    grid = GridSearch(s,target_c, upper_bound=np.inf)
+    grid = GridSearch(s,target_c, upper_bound=upper_bound)
     grid_results = grid.solve()
     grid_results = grid.easy_results(grid_results)
     print(grid_results)
-    M = grid_results.iloc[0].x
+    M = grid.select_solution(grid_results)
+    
+    # M = grid_results.iloc[0].x
     return s, target_c, M
 
 
@@ -219,6 +222,7 @@ class GridSearch :
     self.results["res"] = []
     self.s = s
     self.c = c
+
 
   def obj_function(self,m):
     loss = 0.5 * np.sum(((self.s@m) - self.c)**2)
@@ -298,9 +302,9 @@ def get_lf_observed_segmentations(dataset_num, config):
     return lf_wm_seg.flatten().to(torch.float32).unsqueeze(0), lf_gm_seg.flatten().to(torch.float32).unsqueeze(0), lf_csf_seg.flatten().to(torch.float32).unsqueeze(0), lf_bg_seg.flatten().to(torch.float32).unsqueeze(0)
 
 
-def forward(dataset_num='0011'):
+def forward(dataset_num='0011', target_type='ulf'):
     '''
-    This function will generate the ground truth data for a given HF Image
+    This function will return observed HF, LF and coputed M
     '''
     
     folder = './Data/validation_data/sub_' + dataset_num + '/'
@@ -308,20 +312,7 @@ def forward(dataset_num='0011'):
     (ulf_img_nib, ulf_wm_nib, ulf_gm_nib, ulf_csf_nib) = read_ulf_imgs(folder) #return ULF data
     (ulf_wm_seg, ulf_gm_seg, ulf_csf_seg, ulf_bg_seg) = get_tissue_seg(ulf_wm_nib, ulf_gm_nib, ulf_csf_nib)
     (ulf_wm, ulf_gm, ulf_csf, ulf_bg, hf) = seg_to_intenities(ulf_img_nib, ulf_wm_nib, ulf_gm_nib, ulf_csf_nib, ulf_bg_seg)
-    # (wm_snr, gm_snr, csf_snr) = calc_val_ulf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
-
-    # s, c = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
-    # # c = np.array([9.03, 27.17, 18.14, ]) #this is ULF contrast vector
-    # # c = np.array([13.47, 39.52, 26.05]) #this is HF contrast vector #from ULFEnc dataset
-    # c = np.array([96.026, 343.63, 247.604])
-    # print("SNR matrix:", s, "Target Contrast: " , c)
-    # grid = GridSearch(s,c)
-    # grid_results = grid.solve()
-    # grid_results = grid.easy_results(grid_results)
-    # print(grid_results)
-    # M = grid_results.iloc[0].x
-    # M = grid.select_solution(grid_results)
-    s, target_c, M = get_m('0011', target_type='hf')
+    s, target_c, M = get_m('0011', target_type)
     print("Solution : ", M)
     
     print("Target Contrast: " , target_c, "Achieved contrast: ", s@M)
@@ -337,12 +328,12 @@ def forward(dataset_num='0011'):
     return hf_observed, lf_observed, M
     
     
-def load_val_data(dataset_num, config=default_config):
+def load_val_data(dataset_num, target_type, config=default_config):
     
     slice = config["slice"] 
     #Load HF, ULF observed
     
-    hf_observed, lf_observed, M = forward(dataset_num) #Generating ULF observed
+    hf_observed, lf_observed, M = forward(dataset_num, target_type) #Generating ULF observed
     config["M"] = M
     lf_observed = norm(lf_observed) #normalized
     

@@ -30,13 +30,13 @@ from Models.model_trainer import ModelTrainerModule
 from Models.models import Siren, Finer
 
 from Utils.utils import get_full_img, norm, get_device, dice_stack_helper, get_model, ClearCache
-from Data.load_ixi import load_data, get_hf_observed_segmentations
+# from Data.load_ixi import load_data, get_hf_observed_segmentations
 from Utils.defaults import default_config
 from Utils.plotting_utils2 import plot_seg_results_paper, plot_final_results_paper, plot_hf_results_paper
 from Utils.plotting_utils import loss_plot, plot_image_metrics, plot_4_images
 from LFSynth.ContrastModulation import ContrastModulation
-
 from Data.patchwise3D import RandomPointsDataset
+from LFSynth.HF_ContrastEstimation import forward, load_val_data as load_data 
 
 POINTS_PER_SAMPLE = 96*96*4
 lf_points_per_sample = 48*48*4
@@ -79,25 +79,24 @@ if __name__ == '__main__':
     config["epochs"] = int(args.epochs)
 
 
-    config["size"] = (182, 218, 182)
-    config["size_lf"] = (182//2, 218//2, 182)
+    # config["size"] = (182, 218, 182)
+    # config["size_lf"] = (182//2, 218//2, 182)
     config["slice"] = 11
-    dataset_num = 102 #ixi sample dataset
+    config["dataset_num"] = '0011'
     config["is_new_contrast"] = False #make this true when using new c vector
-    config["M"] = [1, 1, 1]
     config["points_num"] = 96*96*4
     config["downsampled_points"] = 96*96*4
     config["hf_chunk_size"] = (96, 96, 4)
     config["lf_chunk_size"] =  (96, 96, 4)
     
     # dataset_num = 102 #ixi sample dataset
-    dataset_num = '0011'
-    from LFSynth.HF_ContrastEstimation import forward, load_val_data as load_data 
-    
+    dataset_num = config["dataset_num"]
     slice_num = config["slice"]
-    M = forward(dataset_num)
-    config["M"] = M
-    hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_data(dataset_num, config) 
+    
+    
+
+
+    hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_data(dataset_num, target_type = 'ulf' , config = config) 
     gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
     gt_image = gt_image.to(torch.float32)
     lf_gt = torch.tensor(norm(lf_gt)).unsqueeze(-1)
@@ -107,10 +106,12 @@ if __name__ == '__main__':
     print("gt_image: ", gt_image.shape, "lf_gt: ", lf_gt.shape, "lf_gt_seg_dice: ", lf_gt_seg_dice.shape)
     print('gt_image, lf_gt loaded')
     
+    
+    config["M"] = M
     config["size"] = hf_ground_truth.shape
     config["size_lf"] = lf_gt.shape[:-1]
 
-    print(config)
+    # pprint.pprint(config)
 
     
     dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE, downsampled_points= config["downsampled_points"])
@@ -134,6 +135,8 @@ if __name__ == '__main__':
     # Re-initialize the weights and make sure they are different
     initialize_siren_weights(siren_inr, SIREN_FACTOR)
     wandb_logger = WandbLogger(project="hulfsynth", config=args)#, id="test_run_1001", resume="allow")
+    
+
     siren_module = ModelTrainerModule(wandb_logger = wandb_logger,
                                     network=siren_inr,
                                     hf_gt_im=gt_image,
@@ -143,7 +146,6 @@ if __name__ == '__main__':
                                     lr=LEARNING_RATE,
                                     name='SIREN',)
     wandb_logger.watch(siren_module, log="all")
-
 
     trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger, accelerator='gpu', devices=1, strategy='ddp')
     trainer.fit(siren_module, train_dataloaders=dataloader)
@@ -158,4 +160,4 @@ if __name__ == '__main__':
 
     wandb_logger.experiment.log_model(path=model_saving_path, name="model")   
     
-    print(config)
+    

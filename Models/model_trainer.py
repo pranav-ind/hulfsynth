@@ -10,6 +10,8 @@ from typing import Tuple, List, Optional
 import matplotlib.pyplot as plt
 from datetime import datetime
 import math
+import pprint
+
 
 import lightning as pl
 from lightning.pytorch.loggers import WandbLogger
@@ -96,6 +98,7 @@ class ModelTrainerModule(pl.LightningModule):
         self.lf_chunk_size = config["lf_chunk_size"] #(96//2,96//2,4)
         self.points_num = config["points_num"] #96*96*4
         self.downsampled_points = config["downsampled_points"] #48*48*4
+        self.max_epochs = config["epochs"]
         self.num_classes = 4
         
         self.phi = ContrastModulation(self.config)
@@ -108,7 +111,7 @@ class ModelTrainerModule(pl.LightningModule):
         self.ssim_value = monai.metrics.regression.SSIMMetric(spatial_dims=3, data_range=1.0) #expects shape: BCHWD
         self.temp_list1 = []
         self.temp_list2 = []
-        print("Device_PTL: ", self.device, "M: ", self.M)
+        pprint.pprint(self.config)
         
 
     def configure_optimizers(self):
@@ -226,7 +229,7 @@ class ModelTrainerModule(pl.LightningModule):
         self.wandb_logger.log_metrics(loss_dict, step=self.global_step)
         
         #HF metrics over training 
-        if ((self.current_epoch % 5000 )== 0) or (self.current_epoch == (self.trainer.max_steps)-1): #logging every epoch is expensive ; therefore logging in intervals of 50
+        if ((self.current_epoch % 2500 )== 0) or (self.current_epoch == (self.max_epochs)-1): #logging every epoch is expensive ; therefore logging in intervals of 50
             pred_im, pred_seg  = self.sample_at_resolution(self.hf_gt_im.shape[:-1]) #TODO: move HF validation metrics to another method
             psnr_hf =  self.psnr_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
             ssim_hf =  self.ssim_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
