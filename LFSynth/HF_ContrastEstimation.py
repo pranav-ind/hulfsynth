@@ -28,7 +28,7 @@ from Utils.defaults import default_config
 from Utils.utils import norm
 
 
-def read_imgs(folder):
+def read_ulf_imgs(folder):
     #Returns observed image and segmentations in nib format
     folder = folder + "ulf/fast"
     csf_nib = nib.load(folder + "_pve_0.nii.gz") 
@@ -102,6 +102,78 @@ def calc_val_ulf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset):
     print("CNRs- WG: ", Cgw, "WC: ", Ccw, "GC: ", Ccg)
     return (wm_snr, gm_snr, csf_snr)
 
+def get_rois(dataset_num='0011', field_type='hf'):
+    file_path = './Data/validation_data/sub_' + dataset_num + '/' + field_type + '/snrs.txt'
+    lines = []
+    try:
+        with open(file_path, 'r') as file:
+            for line in file:
+                lines.append(ast.literal_eval(((line.strip()).split(' ', 1)[1])))
+                
+    except FileNotFoundError:
+        print(f"Error: The file '{file_path}' was not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    roi_voxels = lines[:4]
+    roi_snrs = lines[4:]
+    return roi_voxels, roi_snrs
+
+'''
+def get_target_c(img_nib, wm_nib, gm_nib, csf_nib, dataset_num, field_type='hf'):
+    #HF input -> HF output
+    rayleigh_correction = 1.53
+    if(dataset == '0011'):
+        #ROIs are extracted manually. For example, refer roi_gen.ipynb 
+        slice_num = 11
+        roi_voxel_list, _ = get_rois(dataset, field_type)
+        wm_roi_pixels = img_nib.get_fdata()[roi_voxel_list[0][1]:roi_voxel_list[0][0]+roi_voxel_list[0][3], roi_voxel_list[0][0]:roi_voxel_list[0][0]+roi_voxel_list[0][2], slice_num][wm_nib.get_fdata()[roi_voxel_list[0][1]:roi_voxel_list[0][0]+roi_voxel_list[0][3], roi_voxel_list[0][0]:roi_voxel_list[0][0]+roi_voxel_list[0][2], slice_num]>0.9]
+        gm_roi_pixels = img_nib.get_fdata()[roi_voxel_list[1][1]:roi_voxel_list[1][0]+roi_voxel_list[1][3], roi_voxel_list[1][0]:roi_voxel_list[1][0]+roi_voxel_list[1][2], slice_num][gm_nib.get_fdata()[roi_voxel_list[1][1]:roi_voxel_list[1][0]+roi_voxel_list[1][3], roi_voxel_list[1][0]:roi_voxel_list[1][0]+roi_voxel_list[1][2], slice_num]>0.9]
+        csf_roi_pixels = img_nib.get_fdata()[roi_voxel_list[2][1]:roi_voxel_list[2][0]+roi_voxel_list[2][3], roi_voxel_list[2][0]:roi_voxel_list[2][0]+roi_voxel_list[2][2], slice_num][csf_nib.get_fdata()[roi_voxel_list[2][1]:roi_voxel_list[2][0]+roi_voxel_list[2][3], roi_voxel_list[2][0]:roi_voxel_list[2][0]+roi_voxel_list[2][2], slice_num]>0.9]
+    
+    noise_file = './Data/validation_data/sub_' + dataset_num + '/' + field_type + '/raw.nii.gz'
+    noise = nib.load(noise_file)
+    # print("BG Noise in different regions :", noise.get_fdata()[:20,:20,95].std(), noise.get_fdata()[150:175,150:175,95].std(), noise.get_fdata()[155:,:25,95].std(), noise.get_fdata()[:25,150:170,95].std()) #Mean of all 4 regions in background
+    
+    std_bg = noise.get_fdata()[:,:,slice_num][roi_voxel_list[3][1]:roi_voxel_list[3][0]+roi_voxel_list[3][3], roi_voxel_list[3][0]:roi_voxel_list[3][0]+roi_voxel_list[3][2]].std() #Background Noise extracted manually
+
+    csf_snr = csf_roi_pixels.mean()/ (std_bg * rayleigh_correction)
+    gm_snr = gm_roi_pixels.mean()/ (std_bg * rayleigh_correction)
+    wm_snr = wm_roi_pixels.mean()/ (std_bg * rayleigh_correction)
+    print(field_type + "SNRs for WM: ", wm_snr, "GM: ", gm_snr, "CSF: ", csf_snr, "BG (std): ", std_bg)
+
+    Ccg = abs(csf_snr - gm_snr) 
+    Ccw = abs(csf_snr - wm_snr)
+    Cgw = abs(gm_snr - wm_snr)
+    target_c = np.array([Cgw, Ccw, Ccg])
+    print("CNRs- WG: ", Cgw, "WC: ", Ccw, "GC: ", Ccg, "target_c: ",target_c)
+    return  target_c #Returns target_c
+'''
+def get_target_c(dataset_num='0011', target_type):
+    _, roi_snrs = get_rois(dataset_num='0011', field_type=target_type) #returns HF SNRs if target_type == HF
+    target_c = np.array([S_list[0]-S_list[1], S_list[0], -S_list[2], S_list[1], -S_list[2]]) #target_c = [Cwg, Cwc, Cgc]
+    return target_c
+
+
+def get_m(dataset_num='0011', target_type):
+    #m^{ULF} = get_m (c^{HF}, S^{ULF}) i.e., if target_type == ULF then S matrix should be from HF and if target_type == HF then S matrix should be ULF ;
+    if(target_type == 'ulf'):
+        S_type = 'hf'
+    else:
+        S_type = 'ulf'
+    rayleigh_correction = 1.53
+    _, S_list = get_rois(dataset_num, field_type=S_type)
+    s = np.array([[S_list[0], -S_list[1], 0], [S_list[0], 0, -S_list[2]], [0, S_list[1], -S_list[2]] ]) #SNR matrix #S_list[0] = WM, S_list[1] = GM, S_list[2] = CSF
+
+    target_c = get_target_c(dataset_num, target_type)
+    grid = GridSearch(s,target_c, upper_bound=np.inf)
+    grid_results = grid.solve()
+    grid_results = grid.easy_results(grid_results)
+    print(grid_results)
+    M = grid_results.iloc[0].x
+    return M
+
+
+    
 
 
 
@@ -131,13 +203,13 @@ def toy_values(wm_snr, gm_snr, csf_snr, dataset):
 
 class GridSearch :
   
-  def __init__(self, s, c):
+  def __init__(self, s, c, upper_bound=1.0):
     self.param_m = [0.1, 0.15, 0.2, 0.25 , 0.3, 0.35 , 0.4, 0.5] #init M search space
     # self.param_m = [0.1, 0.2, 0.3, 0.4, 0.5]
     self.param_epsilon =  [0, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5] #regularization_strength search space
     self.solver = 'trust-constr'
     # self.limits = Bounds(0,1)
-    self.limits = Bounds(0, np.inf)
+    self.limits = Bounds(0, upper_bound)
     self.losses = []
     self.results = {}
     self.results["m_init"] = []
@@ -210,7 +282,7 @@ class GridSearch :
 
 
 def get_hf_observed_segmentations(dataset_num, config):
-    folder = './Data/validation_data/'
+    folder = './Data/validation_data/sub_' + dataset_num +'/'
     hf_observed_nib, hf_wm_nib, hf_gm_nib, hf_csf_nib  = get_hf_observed(folder)
     (hf_wm_seg, hf_gm_seg, hf_csf_seg, hf_bg_seg) = get_tissue_seg(hf_wm_nib, hf_gm_nib, hf_csf_nib)
     # hf_observed_seg_dice = torch.stack((hf_bg_seg[0].reshape(config["size_lf"]), hf_wm_seg[0].reshape(config["size"]), hf_gm_seg[0].reshape(config["size"]), hf_csf_seg[0].reshape(config["size"])), dim=0).unsqueeze(0)
@@ -218,35 +290,37 @@ def get_hf_observed_segmentations(dataset_num, config):
 
 def get_lf_observed_segmentations(dataset_num, config):
     folder = './Data/validation_data/'
-    (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder) #return ULF data
+    (img_nib, wm_nib, gm_nib, csf_nib) = read_ulf_imgs(folder) #return ULF data
     (wm_seg, gm_seg, csf_seg, bg_seg) = get_tissue_seg(wm_nib, gm_nib, csf_nib)
     lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = (torch.from_numpy(wm_seg), torch.from_numpy(gm_seg), torch.from_numpy(csf_seg), torch.from_numpy(bg_seg))
     # lf_observed_seg_dice = torch.stack((lf_bg_seg[0].reshape(config["size_lf"]), lf_wm_seg[0].reshape(config["size_lf"]), lf_gm_seg[0].reshape(config["size_lf"]), lf_csf_seg[0].reshape(config["size_lf"])), dim=0).unsqueeze(0)
     return lf_wm_seg.flatten().to(torch.float32).unsqueeze(0), lf_gm_seg.flatten().to(torch.float32).unsqueeze(0), lf_csf_seg.flatten().to(torch.float32).unsqueeze(0), lf_bg_seg.flatten().to(torch.float32).unsqueeze(0)
 
 
-def forward(dataset_num='val'):
+def forward(dataset_num='0011'):
     '''
     This function will generate the ground truth data for a given HF Image
     '''
-    if(dataset_num == 'val'):
-        folder = './Data/validation_data/'
+    
+    folder = './Data/validation_data/sub_' + dataset_num + '/'
 
-    (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder) #return ULF data
-    (wm_seg, gm_seg, csf_seg, bg_seg) = get_tissue_seg(wm_nib, gm_nib, csf_nib)
-    (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_seg)
-    (wm_snr, gm_snr, csf_snr) = calc_val_ulf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
+    (ulf_img_nib, ulf_wm_nib, ulf_gm_nib, ulf_csf_nib) = read_ulf_imgs(folder) #return ULF data
+    (ulf_wm_seg, ulf_gm_seg, ulf_csf_seg, ulf_bg_seg) = get_tissue_seg(ulf_wm_nib, ulf_gm_nib, ulf_csf_nib)
+    (ulf_wm, ulf_gm, ulf_csf, ulf_bg, hf) = seg_to_intenities(ulf_img_nib, ulf_wm_nib, ulf_gm_nib, ulf_csf_nib, ulf_bg_seg)
+    # (wm_snr, gm_snr, csf_snr) = calc_val_ulf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
 
-    s, c = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
-    # c = np.array([9.03, 27.17, 18.14, ]) #this is ULF contrast vector
-    c = np.array([13.47, 39.52, 26.05]) #this is HF contrast vector
-    print("SNR matrix:", s, "Target Contrast: " , c)
-    grid = GridSearch(s,c)
-    grid_results = grid.solve()
-    grid_results = grid.easy_results(grid_results)
-    print(grid_results)
-    M = grid_results.iloc[0].x
+    # s, c = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
+    # # c = np.array([9.03, 27.17, 18.14, ]) #this is ULF contrast vector
+    # # c = np.array([13.47, 39.52, 26.05]) #this is HF contrast vector #from ULFEnc dataset
+    # c = np.array([96.026, 343.63, 247.604])
+    # print("SNR matrix:", s, "Target Contrast: " , c)
+    # grid = GridSearch(s,c)
+    # grid_results = grid.solve()
+    # grid_results = grid.easy_results(grid_results)
+    # print(grid_results)
+    # M = grid_results.iloc[0].x
     # M = grid.select_solution(grid_results)
+    M = get_m('0011', target_type='hf')
     print("Solution : ", M)
     print("Target Contrast: " , c, "Achieved contrast: ", s@M)
 
