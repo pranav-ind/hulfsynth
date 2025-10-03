@@ -99,7 +99,7 @@ class ModelTrainerModule(pl.LightningModule):
         self.num_classes = 4
         
         self.phi = ContrastModulation(self.config)
-        self.M = [1, 1, 1] #config["M"] #[0.75, 0.9, 0.9]
+        self.M = config["M"] #[0.75, 0.9, 0.9]
 
         self.dice_score = monai.metrics.DiceMetric()
         self.dice2 = monai.metrics.GeneralizedDiceScore()
@@ -226,7 +226,7 @@ class ModelTrainerModule(pl.LightningModule):
         self.wandb_logger.log_metrics(loss_dict, step=self.global_step)
         
         #HF metrics over training 
-        if (self.current_epoch % 5000 )== 0: #logging every epoch is expensive ; therefore logging in intervals of 50
+        if ((self.current_epoch % 5000 )== 0) or (self.current_epoch == (self.trainer.max_steps)-1): #logging every epoch is expensive ; therefore logging in intervals of 50
             pred_im, pred_seg  = self.sample_at_resolution(self.hf_gt_im.shape[:-1]) #TODO: move HF validation metrics to another method
             psnr_hf =  self.psnr_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))
             ssim_hf =  self.ssim_value(pred_im.unsqueeze(0).unsqueeze(0).to('cpu'), self.hf_gt_im.to(pred_im.device).permute(3,0,1,2).unsqueeze(0).to('cpu'))

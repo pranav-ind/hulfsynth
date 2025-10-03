@@ -56,7 +56,7 @@ def wandb_setup(siren_module):
 
 
 if __name__ == '__main__':
-    '''
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("-l1", "--l1")
     parser.add_argument("-l3", "--l3")
@@ -65,18 +65,18 @@ if __name__ == '__main__':
     # parser.add_argument("-l5", "--l5")
     parser.add_argument("-ep", "--epochs") #epochs
     args = parser.parse_args()
-    '''
+    
     
     
     pl.seed_everything(seed=9600, workers=True)
     config = copy.deepcopy(default_config)
     
     config["in_features"] = 3
-    # config["l1"] = float(args.l1) #100 #mse
-    # config["l3"] = float(args.l3) #20 #seg
-    # config["l4"] = args.l4 #0.01 #tv_img
-    # config["l5"] = args.l5 # 0.1 #tv_seg
-    # config["epochs"] = int(args.epochs)
+    config["l1"] = float(args.l1) #100 #mse
+    config["l3"] = float(args.l3) #20 #seg
+    config["l4"] = args.l4 #0.01 #tv_img
+    config["l5"] = args.l5 # 0.1 #tv_seg
+    config["epochs"] = int(args.epochs)
 
 
     config["size"] = (182, 218, 182)
@@ -91,11 +91,12 @@ if __name__ == '__main__':
     config["lf_chunk_size"] =  (96, 96, 4)
     
     # dataset_num = 102 #ixi sample dataset
-    dataset_num = 'val'
+    dataset_num = '0011'
     from LFSynth.HF_ContrastEstimation import forward, load_val_data as load_data 
     
     slice_num = config["slice"]
     M = forward(dataset_num)
+    config["M"] = M
     hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_data(dataset_num, config) 
     gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
     gt_image = gt_image.to(torch.float32)
@@ -111,7 +112,7 @@ if __name__ == '__main__':
 
     print(config)
 
-    '''
+    
     dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE, downsampled_points= config["downsampled_points"])
     dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
     
@@ -156,5 +157,5 @@ if __name__ == '__main__':
     # wandb.save(model_saving_path)
 
     wandb_logger.experiment.log_model(path=model_saving_path, name="model")   
-    '''
     
+    print(config)

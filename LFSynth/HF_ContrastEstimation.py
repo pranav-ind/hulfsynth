@@ -26,7 +26,7 @@ from fsl.wrappers.fast import fast as fast
 import time
 from Utils.defaults import default_config
 from Utils.utils import norm
-
+import ast
 
 def read_ulf_imgs(folder):
     #Returns observed image and segmentations in nib format
@@ -84,7 +84,7 @@ def calc_val_ulf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset):
         gm_roi_pixels = img_nib.get_fdata()[123:127, 132:144, slice_num][gm_nib.get_fdata()[123:127, 132:144, slice_num]>0.9]
         csf_roi_pixels = img_nib.get_fdata()[104:114, 125:133, slice_num][csf_nib.get_fdata()[104:114, 125:133, slice_num]>0.9]
     
-    noise_file = "./Data/validation_data/ulf/raw.nii.gz"
+    noise_file = "./Data/validation_data/sub_" + dataset + "ulf/raw.nii.gz"
     noise = nib.load(noise_file)
     # print("BG Noise in different regions :", noise.get_fdata()[:20,:20,95].std(), noise.get_fdata()[150:175,150:175,95].std(), noise.get_fdata()[155:,:25,95].std(), noise.get_fdata()[:25,150:170,95].std()) #Mean of all 4 regions in background
     
@@ -148,13 +148,14 @@ def get_target_c(img_nib, wm_nib, gm_nib, csf_nib, dataset_num, field_type='hf')
     print("CNRs- WG: ", Cgw, "WC: ", Ccw, "GC: ", Ccg, "target_c: ",target_c)
     return  target_c #Returns target_c
 '''
-def get_target_c(dataset_num='0011', target_type):
+def get_target_c(dataset_num='0011', target_type='hf'):
     _, roi_snrs = get_rois(dataset_num='0011', field_type=target_type) #returns HF SNRs if target_type == HF
-    target_c = np.array([S_list[0]-S_list[1], S_list[0], -S_list[2], S_list[1], -S_list[2]]) #target_c = [Cwg, Cwc, Cgc]
+    S_list = roi_snrs
+    target_c = np.array([S_list[0]-S_list[1], S_list[0] -S_list[2], S_list[1] -S_list[2]]) #target_c = [Cwg, Cwc, Cgc]
     return target_c
 
 
-def get_m(dataset_num='0011', target_type):
+def get_m(dataset_num='0011', target_type='hf'):
     #m^{ULF} = get_m (c^{HF}, S^{ULF}) i.e., if target_type == ULF then S matrix should be from HF and if target_type == HF then S matrix should be ULF ;
     if(target_type == 'ulf'):
         S_type = 'hf'
@@ -162,15 +163,15 @@ def get_m(dataset_num='0011', target_type):
         S_type = 'ulf'
     rayleigh_correction = 1.53
     _, S_list = get_rois(dataset_num, field_type=S_type)
-    s = np.array([[S_list[0], -S_list[1], 0], [S_list[0], 0, -S_list[2]], [0, S_list[1], -S_list[2]] ]) #SNR matrix #S_list[0] = WM, S_list[1] = GM, S_list[2] = CSF
-
+    s = np.array([[S_list[0], -S_list[1], 0], [S_list[0], 0, -S_list[2]], [0, S_list[1], -S_list[2]]]) #SNR matrix #S_list[0] = WM, S_list[1] = GM, S_list[2] = CSF
     target_c = get_target_c(dataset_num, target_type)
+    print("s, c: ", s.shape, target_c.shape)
     grid = GridSearch(s,target_c, upper_bound=np.inf)
     grid_results = grid.solve()
     grid_results = grid.easy_results(grid_results)
     print(grid_results)
     M = grid_results.iloc[0].x
-    return M
+    return s, target_c, M
 
 
     
@@ -289,8 +290,8 @@ def get_hf_observed_segmentations(dataset_num, config):
     return (hf_wm_seg, hf_gm_seg, hf_csf_seg, hf_bg_seg)
 
 def get_lf_observed_segmentations(dataset_num, config):
-    folder = './Data/validation_data/'
-    (img_nib, wm_nib, gm_nib, csf_nib) = read_ulf_imgs(folder) #return ULF data
+    folder = './Data/validation_data/sub_' + dataset_num +'/'
+    (img_nib, wm_nib, gm_nib, csf_nib) = read_ulf_imgs(folder) #return ULF data 
     (wm_seg, gm_seg, csf_seg, bg_seg) = get_tissue_seg(wm_nib, gm_nib, csf_nib)
     lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = (torch.from_numpy(wm_seg), torch.from_numpy(gm_seg), torch.from_numpy(csf_seg), torch.from_numpy(bg_seg))
     # lf_observed_seg_dice = torch.stack((lf_bg_seg[0].reshape(config["size_lf"]), lf_wm_seg[0].reshape(config["size_lf"]), lf_gm_seg[0].reshape(config["size_lf"]), lf_csf_seg[0].reshape(config["size_lf"])), dim=0).unsqueeze(0)
@@ -320,19 +321,21 @@ def forward(dataset_num='0011'):
     # print(grid_results)
     # M = grid_results.iloc[0].x
     # M = grid.select_solution(grid_results)
-    M = get_m('0011', target_type='hf')
+    s, target_c, M = get_m('0011', target_type='hf')
     print("Solution : ", M)
-    print("Target Contrast: " , c, "Achieved contrast: ", s@M)
+    
+    print("Target Contrast: " , target_c, "Achieved contrast: ", s@M)
 
     hf_observed_nib, hf_wm_nib, hf_gm_nib, hf_csf_nib  = get_hf_observed(folder)
     (hf_wm_seg, hf_gm_seg, hf_csf_seg, hf_bg_seg) = get_tissue_seg(hf_wm_nib, hf_gm_nib, hf_csf_nib)
-    lf_observed = (img_nib.get_fdata())
+    lf_observed = (ulf_img_nib.get_fdata())
     hf_observed = hf_observed_nib.get_fdata()
     # hf_observed_seg_dice = torch.stack((hf_bg_seg[0].reshape(config["size_lf"]), hf_wm_seg[0].reshape(config["size"]), hf_gm_seg[0].reshape(config["size"]), hf_csf_seg[0].reshape(config["size"])), dim=0).unsqueeze(0)
     # lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = wm_nib.get_fdata(), gm_nib.get_fdata(), csf_nib.get_fdata(), bg_nib.get_fdata()  #Load ULF Observed Segmentations
     # lf_observed_seg_dice = torch.stack((lf_bg_seg[0].reshape(config["size_lf"]), lf_wm_seg[0].reshape(config["size_lf"]), lf_gm_seg[0].reshape(config["size_lf"]), lf_csf_seg[0].reshape(config["size_lf"])), dim=0).unsqueeze(0)
     # M = [1, 1, 1 ]
     return hf_observed, lf_observed, M
+    
     
 def load_val_data(dataset_num, config=default_config):
     
