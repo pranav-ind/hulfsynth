@@ -102,7 +102,7 @@ class ModelTrainerModule(pl.LightningModule):
         self.num_classes = 4
         
         self.phi = ContrastModulation(self.config)
-        self.M = config["M"] #[0.75, 0.9, 0.9]
+        self.M = config["M"] #[1, 1, 1] #[0.75, 0.9, 0.9]
 
         self.dice_score = monai.metrics.DiceMetric()
         self.dice2 = monai.metrics.GeneralizedDiceScore()
@@ -242,7 +242,7 @@ class ModelTrainerModule(pl.LightningModule):
             rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_ = self.compute_rqs(pred_im, pred_seg)
             
             # final_img = (pred_im[1] * pred_seg[1]) + (pred_im[2] * pred_seg[2]) + (pred_im[3] * pred_seg[3]) #+ (pred_im * pred_seg[0]) 
-            final_img = (pred_im * pred_seg[1]) + (pred_im * pred_seg[2]) + (pred_im * pred_seg[3]) + (pred_im * pred_seg[0]) 
+            final_img = norm((pred_im * pred_seg[1]) + (pred_im * pred_seg[2]) + (pred_im * pred_seg[3]) + (pred_im * pred_seg[0])) 
             
 
             
@@ -253,8 +253,8 @@ class ModelTrainerModule(pl.LightningModule):
             "psnr_lf": psnr_.item(), "normalized_psnr_lf": normalized_psnr_.item(), "ssim_lf": ssim_.item(), 
             "dice_lf": dice_.item(), "iou_lf": iou_.item(), "RQS": rqs_.item(),
             # "total_loss": loss.item(), "mse": mse_loss.item(), "seg": dice_loss.item(), "tv_seg": tv_loss_seg.item(), "tv_img": tv_loss_img.item(), 
-            "pred_img": wandb.Image((pred_im[:,:,slice_num].unsqueeze(0)), mode='L'), 
-            "final_img": wandb.Image((final_img[:,:,slice_num].unsqueeze(0)), mode='L'),
+            "pred_img": wandb.Image(((pred_im)[:,:,slice_num].unsqueeze(0)), mode='L'), 
+            "final_img": wandb.Image(((final_img)[:,:,slice_num].unsqueeze(0)), mode='L'),
 
             "pred1_seg": wandb.Image(pred_seg[1,:,:,slice_num].unsqueeze(0), mode='L'), 
             "pred2_seg": wandb.Image(pred_seg[2,:,:,slice_num].unsqueeze(0), mode='L'), 
