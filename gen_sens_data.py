@@ -73,11 +73,14 @@ def get_m(dataset_num='0011', target_type='hf', target_c = np.array([10.62876390
 
 dataset_num = 102
 folder = './Data/ixi/T1/' + str(dataset_num) + "/"
+write_folder = './Data/ixi/T1/' + str(dataset_num) + '/sensitivity_data/contrast/'
+
+'''
 (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder)
 (wm_seg, gm_seg, csf_seg, bg_seg) = get_hf_tissue_seg(wm_nib, gm_nib, csf_nib)
 (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_seg)
 # (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
-write_folder = './Data/ixi/T1/' + str(dataset_num) + '/sensitivity_data/contrast/'
+
 c_list = (
 np.array([19.591889626325028, 74.45619024020756, 54.86430061388253]),
 np.array([13.309712111059078, 35.49778633247732, 22.18807422141824]),
@@ -94,5 +97,17 @@ for i in range(len(c_list)):
     rician_noise = add_rician(lf_like.shape, v = 5, s = 15)
     ulf_like = lf_like + (rician_noise * mask) #adding rician noise only to foreground voxels
     ulf_nib = nib.Nifti1Image(ulf_like, np.eye(4)) #without bg noise
-    nib.save(ulf_nib, write_folder + str(i) + '/brain.nii.gz')
+    file_name = write_folder + str(i+1) + '/brain.nii.gz'
+    nib.save(ulf_nib, file_name)
+    print('Saving nib file to', file_name, '.....')
+'''
 
+
+
+'''
+#Segmenting images
+for i in range(5):
+    folder_loc = write_folder + str(i+1) + '/'
+    fast(folder_loc + 'brain.nii.gz', out= folder_loc + 'fast', g= False, b = True , B = True, n_classes=3, t=1)
+    print("segmented ", str(i), '.....')
+'''

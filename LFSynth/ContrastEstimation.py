@@ -367,7 +367,39 @@ def forward(dataset_num=1, c = np.array([9.03, 27.17, 18.14,])):
     return (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), M
 # forward(dataset_num = 1)
 
+def forward_sens(dataset_num=1, c = np.array([9.03, 27.17, 18.14,])):
+    '''
+    This function will generate the ground truth data for a given IXI HF Image for the given contrast vector
+    '''
+    dataset_num = 102
+    folder = './Data/ixi/T1/' + str(dataset_num) + "/"
+    
+    (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder)
+    (wm_seg, gm_seg, csf_seg, bg_seg) = get_hf_tissue_seg(wm_nib, gm_nib, csf_nib)
+    (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_seg)
+    # (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
+    # s, _ = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
+    # c = np.array([9.03, 27.17, 18.14,]) 
+    sens_folder = './Data/ixi/T1/' + str(dataset_num) + '/sensitivity_data/contrast/'
+    s, target_c, M = get_m(dataset_num, target_type='ulf')
+    print("SNR matrix:", s, "Target Contrast: " , target_c)
+    grid = GridSearch(s,target_c)
+    grid_results = grid.solve()
+    grid_results = grid.easy_results(grid_results)
+    # print(grid_results)
+    M = grid.select_solution(grid_results)
+    print("Solution : ", M)
+    print("Target Contrast: " , target_c, "Achieved contrast: ", s@M)
+    (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like) = recombine(wm, gm, csf, bg, M)
+    # lf_like = lf_like + np.random.normal(2, 0.75, size=lf_like.shape) #adding gaussian noise
+    # lf_like = lf_like + add_rician(lf_like.shape) #adding rician noise
+    mask = np.where(lf_like>0 ,1.0, 0.0) #mask to get foreground voxels
+    lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15) * mask) #adding rician noise only to foreground voxels
+    # lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15)) #adding rician noise only to foreground voxels
+    
 
+    # plot_4_images(wm_lf_like, gm_lf_like, csf_lf_like, lf_like)#,vmax=[100, 100, 100, 100])
+    return (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), M
 
 
 
