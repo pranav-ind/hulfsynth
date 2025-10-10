@@ -191,8 +191,8 @@ class ModelTrainerModule(pl.LightningModule):
         img_score = (0.3 * ssim_) + (0.2 * normalized_psnr_) #calculates image metrics of ULF predictions
         rqs_ = seg_score + img_score
 
-        return rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_
-        # return rqs_, dice2, iou_, ssim_, psnr_, normalized_psnr_
+        # return rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_
+        return rqs_, dice2, iou_, ssim_, psnr_, normalized_psnr_
 
 
 
@@ -242,7 +242,7 @@ class ModelTrainerModule(pl.LightningModule):
             rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_ = self.compute_rqs(pred_im, pred_seg)
             
             # final_img = (pred_im[1] * pred_seg[1]) + (pred_im[2] * pred_seg[2]) + (pred_im[3] * pred_seg[3]) #+ (pred_im * pred_seg[0]) 
-            final_img = norm((pred_im * pred_seg[1]) + (pred_im * pred_seg[2]) + (pred_im * pred_seg[3]) + (pred_im * pred_seg[0])) 
+            final_img = norm((pred_im * pred_seg[1]) + (pred_im * pred_seg[2]) + (pred_im * pred_seg[3])) #+ (pred_im * pred_seg[0])) 
             
 
             

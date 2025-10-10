@@ -358,9 +358,9 @@ def forward(dataset_num=1, c = np.array([9.03, 27.17, 18.14,]) ):
     (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like) = recombine(wm, gm, csf, bg, M)
     # lf_like = lf_like + np.random.normal(2, 0.75, size=lf_like.shape) #adding gaussian noise
     # lf_like = lf_like + add_rician(lf_like.shape) #adding rician noise
-    # mask = np.where(lf_like>0 ,1.0, 0.0) #mask to get foreground voxels
-    # lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15) * mask) #adding rician noise only to foreground voxels
-    lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15)) #adding rician noise only to foreground voxels
+    mask = np.where(lf_like>0 ,1.0, 0.0) #mask to get foreground voxels
+    lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15) * mask) #adding rician noise only to foreground voxels
+    # lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15)) #adding rician noise only to foreground voxels
     
 
     # plot_4_images(wm_lf_like, gm_lf_like, csf_lf_like, lf_like)#,vmax=[100, 100, 100, 100])
