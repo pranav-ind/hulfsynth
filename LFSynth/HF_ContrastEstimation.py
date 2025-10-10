@@ -312,7 +312,7 @@ def forward(dataset_num='0011', target_type='ulf'):
     (ulf_img_nib, ulf_wm_nib, ulf_gm_nib, ulf_csf_nib) = read_ulf_imgs(folder) #return ULF data
     (ulf_wm_seg, ulf_gm_seg, ulf_csf_seg, ulf_bg_seg) = get_tissue_seg(ulf_wm_nib, ulf_gm_nib, ulf_csf_nib)
     (ulf_wm, ulf_gm, ulf_csf, ulf_bg, hf) = seg_to_intenities(ulf_img_nib, ulf_wm_nib, ulf_gm_nib, ulf_csf_nib, ulf_bg_seg)
-    s, target_c, M = get_m('0011', target_type)
+    s, target_c, M = get_m(dataset_num, target_type)
     print("Solution : ", M)
     
     print("Target Contrast: " , target_c, "Achieved contrast: ", s@M)

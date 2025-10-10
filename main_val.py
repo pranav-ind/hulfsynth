@@ -82,7 +82,7 @@ if __name__ == '__main__':
     # config["size"] = (182, 218, 182)
     # config["size_lf"] = (182//2, 218//2, 182)
     config["slice"] = 11
-    config["dataset_num"] = '0011'
+    config["dataset_num"] = '0015'
     config["is_new_contrast"] = False #make this true when using new c vector
     config["points_num"] = 96*96*4
     config["downsampled_points"] = 96*96*4
