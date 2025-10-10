@@ -331,7 +331,7 @@ def get_m(dataset_num='0011', target_type='hf'):
     return s, target_c, M
 
 
-def forward(dataset_num=1, c = np.array([9.03, 27.17, 18.14,]) ):
+def forward(dataset_num=1, c = np.array([9.03, 27.17, 18.14,])):
     '''
     This function will generate the ground truth data for a given IXI HF Image for the given contrast vector
     '''
