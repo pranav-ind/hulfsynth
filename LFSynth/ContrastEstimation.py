@@ -377,11 +377,27 @@ def forward_sens(dataset_num=1, c = np.array([9.03, 27.17, 18.14,])):
     (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder)
     (wm_seg, gm_seg, csf_seg, bg_seg) = get_hf_tissue_seg(wm_nib, gm_nib, csf_nib)
     (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_seg)
-    # (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
-    # s, _ = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
-    # c = np.array([9.03, 27.17, 18.14,]) 
+    c_list = (
+    np.array([19.591889626325028, 74.45619024020756, 54.86430061388253]),
+    np.array([13.309712111059078, 35.49778633247732, 22.18807422141824]),
+    np.array([10.62876390679262, 36.76892223997362, 26.140158333180995]),
+    np.array([12.08320064326, 38.80917554433573, 26.72597490107573]),
+    np.array([15.131863348522124, 57.951366902350586, 42.81950355382846]))
+    
     sens_folder = './Data/ixi/T1/' + str(dataset_num) + '/sensitivity_data/contrast/'
-    s, target_c, M = get_m(dataset_num, target_type='ulf')
+    for i in range(len(c_list)):
+        s, target_c, M = get_m(dataset_num, target_type='ulf', target_c = c_list[i])
+        print("SNR matrix:", s, "Target Contrast: " , target_c, "Solution : ", M)
+        print("Target Contrast: " , target_c, "Achieved contrast: ", s@M)
+        (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like) = recombine(wm, gm, csf, bg, M)
+        mask = np.where(lf_like>0 ,1.0, 0.0)
+        rician_noise = add_rician(lf_like.shape, v = 5, s = 15)
+        ulf_like = lf_like + (rician_noise * mask) #adding rician noise only to foreground voxels
+        ulf_nib = nib.Nifti1Image(ulf_like, np.eye(4)) #without bg noise
+        file_name = write_folder + str(i+1) + '/brain.nii.gz'
+        nib.save(ulf_nib, file_name)
+        print('Saving nib file to', file_name, '.....')
+    
     print("SNR matrix:", s, "Target Contrast: " , target_c)
     grid = GridSearch(s,target_c)
     grid_results = grid.solve()

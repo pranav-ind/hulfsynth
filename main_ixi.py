@@ -30,7 +30,7 @@ from Models.model_trainer import ModelTrainerModule
 from Models.models import Siren, Finer
 
 from Utils.utils import get_full_img, norm, get_device, dice_stack_helper, get_model, ClearCache
-from Data.load_ixi import load_data, get_hf_observed_segmentations
+from Data.load_ixi import load_data, get_hf_observed_segmentations, load_sensitivity_data
 from Utils.defaults import default_config
 from Utils.plotting_utils2 import plot_seg_results_paper, plot_final_results_paper, plot_hf_results_paper
 from Utils.plotting_utils import loss_plot, plot_image_metrics, plot_4_images
@@ -56,8 +56,9 @@ def wandb_setup(siren_module):
 
 
 if __name__ == '__main__':
+    config = copy.deepcopy(default_config)
+    
     parser = argparse.ArgumentParser()
-
     parser.add_argument("-l1", "--l1")
     parser.add_argument("-l3", "--l3")
     parser.add_argument("-l4", "--l4", nargs="*", type=float, default=[])
@@ -94,9 +95,11 @@ if __name__ == '__main__':
     
     dataset_num = config["dataset_num"]
     slice_num = config["slice"]
-    
+    sens_id = config["sens_id"] = 1
 
-    hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_data(dataset_num, config) #uncomment
+    # hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_data(dataset_num, config) #uncomment
+    hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_sensitivity_data(dataset_num, config, sens_id)
+
     gt_image = torch.tensor(norm(hf_ground_truth)).unsqueeze(-1)
     gt_image = gt_image.to(torch.float32)
     lf_gt = torch.tensor(norm(lf_gt)).unsqueeze(-1)
@@ -111,9 +114,6 @@ if __name__ == '__main__':
 
     dataset = RandomPointsDataset(gt_image, lf_gt, lf_gt_seg_dice, points_num=POINTS_PER_SAMPLE)
     dataloader = DataLoader(dataset, batch_size=1, num_workers=0, pin_memory=False) # We set a batch_size of 1 since our dataloader is already returning a batch of points.
-    
-    
-
     
     HIDDEN_SIZE = 128 #best_config; 128/5/10000
     NUM_LAYERS = 5
@@ -158,4 +158,5 @@ if __name__ == '__main__':
     wandb_logger.experiment.log_model(path=model_saving_path, name="model")
 
     print(config)
+    '''
     

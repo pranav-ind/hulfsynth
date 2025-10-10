@@ -75,7 +75,7 @@ dataset_num = 102
 folder = './Data/ixi/T1/' + str(dataset_num) + "/"
 write_folder = './Data/ixi/T1/' + str(dataset_num) + '/sensitivity_data/contrast/'
 
-'''
+
 (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder)
 (wm_seg, gm_seg, csf_seg, bg_seg) = get_hf_tissue_seg(wm_nib, gm_nib, csf_nib)
 (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_seg)
@@ -92,6 +92,9 @@ for i in range(len(c_list)):
     s, target_c, M = get_m(dataset_num, target_type='ulf', target_c = c_list[i])
     print("SNR matrix:", s, "Target Contrast: " , target_c, "Solution : ", M)
     print("Target Contrast: " , target_c, "Achieved contrast: ", s@M)
+
+
+    '''
     (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like) = recombine(wm, gm, csf, bg, M)
     mask = np.where(lf_like>0 ,1.0, 0.0)
     rician_noise = add_rician(lf_like.shape, v = 5, s = 15)
@@ -100,7 +103,17 @@ for i in range(len(c_list)):
     file_name = write_folder + str(i+1) + '/brain.nii.gz'
     nib.save(ulf_nib, file_name)
     print('Saving nib file to', file_name, '.....')
-'''
+    '''
+
+    '''
+    lines_to_write = [c_list[i].tolist(), M.tolist()]
+    file_name = write_folder + str(i+1) + '/cnrs.txt'
+    print(file_name)
+    with open(file_name, "w") as f:  # Open in 'w' (write) mode to overwrite or create the file
+        for line in lines_to_write:
+            f.write(str(line) + "\n")  # Add a newline character to separate lines
+    '''
+
 
 
 
@@ -111,3 +124,5 @@ for i in range(5):
     fast(folder_loc + 'brain.nii.gz', out= folder_loc + 'fast', g= False, b = True , B = True, n_classes=3, t=1)
     print("segmented ", str(i), '.....')
 '''
+
+
