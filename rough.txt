@@ -1,0 +1,23 @@
+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
+
+CUDA_VISIBLE_DEVICES=$gpu_id python main_ixi.py -l1 300 -l3 20 -l4 0 -l5 0.1 -ep 10000 > "${LOG_DIR}/gpu_${gpu_id}.log" 2>&1 &
+
+
+ssh vili
+bash; 
+cd projects/hulfsynth/hulfsynth; conda activate mri_recon; gpu_id=6; clear
+
+
+CUDA_VISIBLE_DEVICES=$gpu_id python main.py -l1 100 -l3 20 -l4 10.0 -l5 0.9 -ep 10000
+CUDA_VISIBLE_DEVICES=$gpu_id python main.py -l1 100 -l3 40 -l4 0.5 -l5 2.5 0.1 0.1 0.1  -ep 10000
+
+
+
+CUDA_VISIBLE_DEVICES=$gpu_id python main.py -l1 100 -l3 40 -l4 5.0 0.1 0.1 0.1 -l5 2.5 0.1 0.1 0.1  -ep 10000
+CUDA_VISIBLE_DEVICES=$gpu_id python main.py -l1 100 -l3 40 -l4 1.0 0.3 0.2 0.1 -l5 2.5 0.1 0.1 0.1  -ep 10000
+
+
+CUDA_VISIBLE_DEVICES=$gpu_id python temp.py -l1 150 -l3 30 -l4 2.5 0.1 0.2 0.2 -l5 2.5 0.1 0.1 0.1  -ep 10000
+
+
+fslreorient2std ./raw.nii.gz ./reoriented.nii.gz

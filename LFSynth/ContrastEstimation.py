@@ -24,6 +24,7 @@ import matplotlib.patches as patches
 import pandas as pd 
 from fsl.wrappers.fast import fast as fast
 import time
+import ast
 
 
 
@@ -64,6 +65,22 @@ def seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg):
     hf_img = csf + gm + wm + bg
 
     return (wm, gm, csf, bg, hf_img)
+
+# def get_rois(dataset_num='0011', field_type='hf'):
+#     file_path = './Data/validation_data/sub_' + dataset_num + '/' + field_type + '/snrs.txt'
+#     lines = []
+#     try:
+#         with open(file_path, 'r') as file:
+#             for line in file:
+#                 lines.append(ast.literal_eval(((line.strip()).split(' ', 1)[1])))
+                
+#     except FileNotFoundError:
+#         print(f"Error: The file '{file_path}' was not found.")
+#     except Exception as e:
+#         print(f"An error occurred: {e}")
+#     roi_voxels = lines[:4]
+#     roi_snrs = lines[4:]
+#     return roi_voxels, roi_snrs
 
 def calc_ixi_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset):
     rayleigh_correction = 1.53
@@ -253,7 +270,7 @@ def recombine(wm, gm, csf, bg, M):
     
 
     bg_new = downsample(bg)
-    lf_img = csf_new + gm_new + wm_new + bg_new
+    lf_img = csf_new + gm_new + wm_new #+ bg_new
     return wm_new, gm_new, csf_new, bg_new, lf_img
 
 def add_rician(size_lf, v = 2, s = 3):
@@ -270,9 +287,9 @@ def add_rician(size_lf, v = 2, s = 3):
     return noise.reshape(size_lf)
 
 
-def forward(dataset_num=1):
+def forward(dataset_num=1, c = np.array([9.03, 27.17, 18.14,]) ):
     '''
-    This function will generate the ground truth data for a given HF Image
+    This function will generate the ground truth data for a given IXI HF Image for the given contrast vector
     '''
     if(dataset_num==1 or dataset_num ==2):
 
@@ -284,8 +301,8 @@ def forward(dataset_num=1):
     (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_seg)
     (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
 
-    s, c = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
-    c = np.array([9.03, 27.17, 18.14, ]) 
+    s, _ = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
+    # c = np.array([9.03, 27.17, 18.14,]) 
     print("SNR matrix:", s, "Target Contrast: " , c)
     grid = GridSearch(s,c)
     grid_results = grid.solve()
@@ -302,6 +319,74 @@ def forward(dataset_num=1):
 
     # plot_4_images(wm_lf_like, gm_lf_like, csf_lf_like, lf_like)#,vmax=[100, 100, 100, 100])
     return (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), (wm_snr, gm_snr, csf_snr), M
-
-
 # forward(dataset_num = 1)
+
+
+
+
+def get_rois(dataset_num='0011', field_type='hf'):
+    folder = './Data/ixi/T1/' + str(dataset_num) +  '/' + field_type
+    file_path =  folder + '/snrs.txt'
+    lines = []
+    try:
+        with open(file_path, 'r') as file:
+            for line in file:
+                lines.append(ast.literal_eval(((line.strip()).split(' ', 1)[1])))
+                
+    except FileNotFoundError:
+        print(f"Error: The file '{file_path}' was not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    roi_voxels = lines[:4]
+    roi_snrs = lines[4:]
+    return roi_voxels, roi_snrs
+
+def get_m(dataset_num='0011', target_type='hf'):
+    #m^{ULF} = get_m (c^{HF}, S^{ULF}) i.e., if target_type == ULF then S matrix should be from HF and if target_type == HF then S matrix should be ULF ;
+    if(target_type == 'ulf'):
+        S_type = 'hf'
+        upper_bound = 1.0
+    else:
+        S_type = 'ulf'
+        upper_bound = np.inf
+    rayleigh_correction = 1.53
+    _, S_list = get_rois(dataset_num, field_type=S_type)
+    print("S list", S_list)
+    s = np.array([[S_list[0], -S_list[1], 0], [S_list[0], 0, -S_list[2]], [0, S_list[1], -S_list[2]]]) #SNR matrix #S_list[0] = WM, S_list[1] = GM, S_list[2] = CSF
+    # target_c = get_target_c(dataset_num, target_type)
+    # target_c = np.array([19.59, 74.456, 54.86])
+    target_c = np.array([10.62876390679262, 36.76892223997362, 26.140158333180995])
+    grid = GridSearch(s,target_c, upper_bound=upper_bound)
+    grid_results = grid.solve()
+    grid_results = grid.easy_results(grid_results)
+    # print(grid_results)
+    M = grid.select_solution(grid_results)
+    
+    # M = grid_results.iloc[0].x
+    return s, target_c, M
+
+
+
+
+def generate_sensitivity_data(dataset_num=102, c = np.array([9.03, 27.17, 18.14,]) ):
+    folder = './Data/ixi/T1/' + str(dataset_num) + "/"
+    (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder)
+    (wm_seg, gm_seg, csf_seg, bg_seg) = get_hf_tissue_seg(wm_nib, gm_nib, csf_nib)
+    (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_seg)
+    # (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
+    s, target_c, M = get_m(dataset_num, target_type='ulf')
+    print("Solution : ", M)
+    print("Target Contrast: " , target_c, "Achieved contrast: ", s@M)
+
+    (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like) = recombine(wm, gm, csf, bg, M)
+    mask = np.where(lf_like>0 ,1.0, 0.0)
+    final_ulf = lf_like + (add_rician(lf_like.shape, v = 5, s = 15) * mask) #adding rician noise only to foreground voxels
+    ulf_nib = nib.Nifti1Image(temp, np.eye(4))
+    nib.save(ulf_nib, './Data/ixi/T1/102/sensitivity_data/temp/brain.nii.gz')
+
+
+
+    
+
+
+    
