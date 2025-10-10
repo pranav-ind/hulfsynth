@@ -177,12 +177,12 @@ def toy_values(wm_snr, gm_snr, csf_snr, dataset):
 
 class GridSearch :
   
-  def __init__(self, s, c):
+  def __init__(self, s, c, upper_bound=1):
     self.param_m = [0.1, 0.15, 0.2, 0.25 , 0.3, 0.35 , 0.4, 0.5] #init M search space
     # self.param_m = [0.1, 0.2, 0.3, 0.4, 0.5]
     self.param_epsilon =  [0, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5] #regularization_strength search space
     self.solver = 'trust-constr'
-    self.limits = Bounds(0,1)
+    self.limits = Bounds(0,upper_bound)
     self.losses = []
     self.results = {}
     self.results["m_init"] = []
@@ -287,41 +287,6 @@ def add_rician(size_lf, v = 2, s = 3):
     return noise.reshape(size_lf)
 
 
-def forward(dataset_num=1, c = np.array([9.03, 27.17, 18.14,]) ):
-    '''
-    This function will generate the ground truth data for a given IXI HF Image for the given contrast vector
-    '''
-    if(dataset_num==1 or dataset_num ==2):
-
-        folder = "./Data/data_" + str(dataset_num) + "/"
-    else:        
-        folder = './Data/ixi/T1/' + str(dataset_num) + "/"
-    (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder)
-    (wm_seg, gm_seg, csf_seg, bg_seg) = get_hf_tissue_seg(wm_nib, gm_nib, csf_nib)
-    (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_seg)
-    (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
-
-    s, _ = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
-    # c = np.array([9.03, 27.17, 18.14,]) 
-    print("SNR matrix:", s, "Target Contrast: " , c)
-    grid = GridSearch(s,c)
-    grid_results = grid.solve()
-    grid_results = grid.easy_results(grid_results)
-    # print(grid_results)
-    M = grid.select_solution(grid_results)
-    print("Solution : ", M)
-    print("Target Contrast: " , c, "Achieved contrast: ", s@M)
-    (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like) = recombine(wm, gm, csf, bg, M)
-    # lf_like = lf_like + np.random.normal(2, 0.75, size=lf_like.shape) #adding gaussian noise
-    lf_like = lf_like + add_rician(lf_like.shape) #adding rician noise
-    
-
-
-    # plot_4_images(wm_lf_like, gm_lf_like, csf_lf_like, lf_like)#,vmax=[100, 100, 100, 100])
-    return (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), (wm_snr, gm_snr, csf_snr), M
-# forward(dataset_num = 1)
-
-
 
 
 def get_rois(dataset_num='0011', field_type='hf'):
@@ -351,7 +316,7 @@ def get_m(dataset_num='0011', target_type='hf'):
         upper_bound = np.inf
     rayleigh_correction = 1.53
     _, S_list = get_rois(dataset_num, field_type=S_type)
-    print("S list", S_list)
+    # print("S list", S_list)
     s = np.array([[S_list[0], -S_list[1], 0], [S_list[0], 0, -S_list[2]], [0, S_list[1], -S_list[2]]]) #SNR matrix #S_list[0] = WM, S_list[1] = GM, S_list[2] = CSF
     # target_c = get_target_c(dataset_num, target_type)
     # target_c = np.array([19.59, 74.456, 54.86])
@@ -364,6 +329,43 @@ def get_m(dataset_num='0011', target_type='hf'):
     
     # M = grid_results.iloc[0].x
     return s, target_c, M
+
+
+def forward(dataset_num=1, c = np.array([9.03, 27.17, 18.14,]) ):
+    '''
+    This function will generate the ground truth data for a given IXI HF Image for the given contrast vector
+    '''
+    if(dataset_num==1 or dataset_num ==2):
+
+        folder = "./Data/data_" + str(dataset_num) + "/"
+    else:        
+        folder = './Data/ixi/T1/' + str(dataset_num) + "/"
+    (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder)
+    (wm_seg, gm_seg, csf_seg, bg_seg) = get_hf_tissue_seg(wm_nib, gm_nib, csf_nib)
+    (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_seg)
+    # (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
+    # s, _ = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
+    # c = np.array([9.03, 27.17, 18.14,]) 
+    s, target_c, M = get_m(dataset_num, target_type='ulf')
+    print("SNR matrix:", s, "Target Contrast: " , target_c)
+    grid = GridSearch(s,target_c)
+    grid_results = grid.solve()
+    grid_results = grid.easy_results(grid_results)
+    # print(grid_results)
+    M = grid.select_solution(grid_results)
+    print("Solution : ", M)
+    print("Target Contrast: " , target_c, "Achieved contrast: ", s@M)
+    (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like) = recombine(wm, gm, csf, bg, M)
+    # lf_like = lf_like + np.random.normal(2, 0.75, size=lf_like.shape) #adding gaussian noise
+    # lf_like = lf_like + add_rician(lf_like.shape) #adding rician noise
+    mask = np.where(lf_like>0 ,1.0, 0.0) #mask to get foreground voxels
+    lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15) * mask) #adding rician noise only to foreground voxels
+    
+
+    # plot_4_images(wm_lf_like, gm_lf_like, csf_lf_like, lf_like)#,vmax=[100, 100, 100, 100])
+    return (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), M
+# forward(dataset_num = 1)
+
 
 
 

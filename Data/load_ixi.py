@@ -72,25 +72,11 @@ def load_data(dataset_num, config=default_config):
     hf_loc = "./Data/ixi/T1/" + str(dataset_num)+ "/hf/fast_restore.nii.gz"
     hf_observed = nib.load(hf_loc).get_fdata()
     
-    (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), (wm_snr, gm_snr, csf_snr), M = contrast_forward(dataset_num) #Generating ULF observed
+    (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), M = contrast_forward(dataset_num) #Generating ULF observed
     config["M"] = M
-    # print(wm_lf_like.shape, lf_like.shape, wm_seg.shape, wm_snr, M)
+    # print(wm_lf_like.shape, lf_like.shape, wm_seg.shape, M)
     #Load ULF observed
     lf_observed = norm(lf_like) #normalized
-    
-    
-    if(config["is_new_contrast"]):
-        noise_threshold = 17.0 #Removing bg pixels for FSL FAST; Alternatively, use FSL SUSAN to remove bg noise
-        lf_like[lf_like< noise_threshold] = 0
-        ulf_loc = "./Data/ixi/T1/" + str(dataset_num)+ "/ulf/"
-        lf_nib = nib.Nifti1Image(lf_like, np.eye(4)) #ULF with bg noise
-        nib.save(lf_nib, ulf_loc+'ulf_temp.nii.gz')
-        lf_nib = nib.Nifti1Image(lf_observed, np.eye(4)) #ULF with bg noise
-        nib.save(lf_nib, ulf_loc+'ulf.nii.gz')
-        print('Saved new ULF image with degradation vector: ', M)
-
-    
-    
     
     
     #Updating size config parameters
