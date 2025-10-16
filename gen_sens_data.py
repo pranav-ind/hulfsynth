@@ -86,7 +86,11 @@ np.array([19.591889626325028, 74.45619024020756, 54.86430061388253]),
 np.array([13.309712111059078, 35.49778633247732, 22.18807422141824]),
 np.array([10.62876390679262, 36.76892223997362, 26.140158333180995]),
 np.array([12.08320064326, 38.80917554433573, 26.72597490107573]),
-np.array([15.131863348522124, 57.951366902350586, 42.81950355382846]))
+np.array([15.131863348522124, 57.951366902350586, 42.81950355382846]),
+np.array([6.70, 29.92, 23.21]), 
+np.array([5.6, 20.4, 14.8]), 
+np.array([8, 25, 17]),
+)
 
 for i in range(len(c_list)):
     s, target_c, M = get_m(dataset_num, target_type='ulf', target_c = c_list[i])
@@ -94,7 +98,7 @@ for i in range(len(c_list)):
     print("Target Contrast: " , target_c, "Achieved contrast: ", s@M)
 
 
-    '''
+    
     (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like) = recombine(wm, gm, csf, bg, M)
     mask = np.where(lf_like>0 ,1.0, 0.0)
     rician_noise = add_rician(lf_like.shape, v = 5, s = 15)
@@ -103,24 +107,25 @@ for i in range(len(c_list)):
     file_name = write_folder + str(i+1) + '/brain.nii.gz'
     nib.save(ulf_nib, file_name)
     print('Saving nib file to', file_name, '.....')
-    '''
+    
+    
 
-    '''
+    
     lines_to_write = [c_list[i].tolist(), M.tolist()]
     file_name = write_folder + str(i+1) + '/cnrs.txt'
     print(file_name)
     with open(file_name, "w") as f:  # Open in 'w' (write) mode to overwrite or create the file
         for line in lines_to_write:
             f.write(str(line) + "\n")  # Add a newline character to separate lines
-    '''
+    
 
 
 
 
 '''
 #Segmenting images
-for i in range(5):
-    folder_loc = write_folder + str(i+1) + '/'
+for i in range(6,9):
+    folder_loc = write_folder + str(i) + '/'
     fast(folder_loc + 'brain.nii.gz', out= folder_loc + 'fast', g= False, b = True , B = True, n_classes=3, t=1)
     print("segmented ", str(i), '.....')
 '''
