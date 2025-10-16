@@ -12,7 +12,7 @@ import copy
 import argparse
 
 
-import lightning as pl
+import lightning.pytorch as pl
 from lightning.pytorch.loggers import WandbLogger
 from pytorch_lightning.utilities import rank_zero_only
 import wandb
@@ -22,7 +22,7 @@ import monai
 from monai.losses import DiceLoss, DiceCELoss, SoftclDiceLoss, DiceFocalLoss, NACLLoss
 from kornia.losses import total_variation
 
-from Models.model import MLP, initialize_siren_weights, SineLayer, ReLULayer
+from Models.model import MLP, initialize_siren_weights, SineLayer, ReLULayer, WIRELayer, initialize_wire_weights
 from Models.model_trainer import ModelTrainerModule
 
 
@@ -59,11 +59,11 @@ if __name__ == '__main__':
     config = copy.deepcopy(default_config)
     
     parser = argparse.ArgumentParser()
+    parser.add_argument("-id", )
     parser.add_argument("-l1", "--l1")
     parser.add_argument("-l3", "--l3")
     parser.add_argument("-l4", "--l4", nargs="*", type=float, default=[])
     parser.add_argument("-l5", "--l5", nargs="*", type=float, default=[])
-    # parser.add_argument("-l5", "--l5")
     parser.add_argument("-ep", "--epochs") #epochs
     args = parser.parse_args()
     
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     
     dataset_num = config["dataset_num"]
     slice_num = config["slice"]
-    sens_id = config["sens_id"] = 1
+    sens_id = config["sens_id"] = int(args.id)
 
     # hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_data(dataset_num, config) #uncomment
     hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_sensitivity_data(dataset_num, config, sens_id)
@@ -119,7 +119,10 @@ if __name__ == '__main__':
     NUM_LAYERS = 5
     TRAINING_EPOCHS = config["epochs"]
     LEARNING_RATE = 5e-5
-    SIREN_FACTOR = 30.0 
+    SIREN_FACTOR = 30.0
+    WIRE_OMEGA = 10.0
+
+    
     siren_inr = MLP(in_size=3,
                     out_size=5,
                     hidden_size=HIDDEN_SIZE,
@@ -130,7 +133,7 @@ if __name__ == '__main__':
     # Re-initialize the weights and make sure they are different
     initialize_siren_weights(siren_inr, SIREN_FACTOR)
     wandb_logger = WandbLogger(project="hulfsynth", config=args)#, id="test_run_1001", resume="allow")
-    siren_module = ModelTrainerModule(wandb_logger = wandb_logger,
+    trainer_module = ModelTrainerModule(wandb_logger = wandb_logger,
                                     network=siren_inr,
                                     hf_gt_im=gt_image,
                                     lf_gt_im = lf_gt,
@@ -138,25 +141,48 @@ if __name__ == '__main__':
                                     config = config,
                                     lr=LEARNING_RATE,
                                     name='SIREN',)
-
-    # run, wandb_logger  = wandb_setup(siren_module)
+    wandb_logger.watch(trainer_module, log="all")                                    
+    '''
     
-    wandb_logger.watch(siren_module, log="all")
+    
+    wire_inr = MLP(in_size=3,
+                    out_size=5,
+                    hidden_size=HIDDEN_SIZE,
+                    num_layers=NUM_LAYERS,
+                    layer_class=WIRELayer, 
+                    siren_factor=SIREN_FACTOR,
+                    wire_omega=WIRE_OMEGA
+                    )
+    initialize_wire_weights(wire_inr, WIRE_OMEGA)
+    wandb_logger = WandbLogger(project="hulfsynth", config=args)#, id="test_run_1001", resume="allow")
+    trainer_module = ModelTrainerModule(wandb_logger = wandb_logger,
+                                    network=wire_inr,
+                                    hf_gt_im=gt_image,
+                                    lf_gt_im = lf_gt,
+                                    lf_gt_seg = lf_gt_seg_dice,
+                                    config = config,
+                                    lr=LEARNING_RATE,
+                                    name='WIRE',)
+    
+    wandb_logger.watch(trainer_module, log="all")
+    '''
 
+    s = datetime.now()
+    trainer = pl.Trainer( max_epochs=TRAINING_EPOCHS, logger=wandb_logger, accelerator='gpu', devices=1, strategy='ddp', deterministic=True,)
+    trainer.fit(trainer_module, train_dataloaders=dataloader)
+    print(f"Fitting time: {datetime.now()-s}s.")
 
-    trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger, accelerator='gpu', devices=1, strategy='ddp')
-    trainer.fit(siren_module, train_dataloaders=dataloader)
 
 
     dummy_input, _ , _ = next(iter(dataloader))
     dummy_input = dummy_input.view(-1, dummy_input.shape[-1])
     model_saving_path =  "./wandb/model.onnx"
-    torch.onnx.export(siren_module.network.to('cpu'), dummy_input.to('cpu'), model_saving_path)
+    torch.onnx.export(trainer_module.network.to('cpu'), dummy_input.to('cpu'), model_saving_path)
     print("locally saved model to: ", model_saving_path)
     # wandb.save(model_saving_path)
 
     wandb_logger.experiment.log_model(path=model_saving_path, name="model")
 
     print(config)
-    '''
+    
     

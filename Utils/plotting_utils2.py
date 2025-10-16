@@ -435,3 +435,86 @@ def plot_seg_results_compare_2_paper(config, model_output_seg_list, hf_gt_seg_li
     line = Line2D([-0.0235, 1], [y, y], transform=fig.transFigure, color=sub_color, linewidth=0.75, linestyle='--')
     fig.add_artist(line)
     return fig
+
+
+
+
+def plot_8_images_2rows(images, titles=None, figsize=(16, 8), cmap='gray', suptitle=None, row_labels=None, save_path=None, dpi=100):
+    """
+    Plot 8 images in 2 rows (4 images per row) using matplotlib.
+    
+    Parameters:
+    -----------
+    images : list or array-like
+        List of 8 images to plot. Each image should be a numpy array.
+        Can be 2D (grayscale) or 3D (RGB/color) arrays.
+        Images 0-3 go in first row, images 4-7 go in second row.
+    titles : list, optional
+        List of 8 titles for each subplot. Default is None.
+    figsize : tuple, optional
+        Figure size as (width, height). Default is (16, 8).
+    cmap : str, optional
+        Colormap for grayscale images. Default is 'gray'.
+    suptitle : str, optional
+        Overall title for the entire figure. Default is None.
+    row_labels : list, optional
+        List of 2 labels for each row (appears on left side). Default is None.
+    save_path : str, optional
+        Path to save the figure. If None, figure is not saved.
+    dpi : int, optional
+        DPI for saved figure. Default is 100.
+    
+    Returns:
+    --------
+    fig, axes : matplotlib figure and axes objects (2x4 array)
+    """
+    
+    if len(images) != 8:
+        raise ValueError("Exactly 8 images must be provided")
+    
+    # Create figure and subplots (2 rows, 4 columns)
+    fig, axes = plt.subplots(2, 4, figsize=figsize)
+    
+    # Set overall title if provided
+    if suptitle:
+        fig.suptitle(suptitle, fontsize=16, fontweight='bold', y=0.98)
+    
+    # Plot images
+    for i, img in enumerate(images):
+        row_idx = i // 4  # Row index (0 or 1)
+        col_idx = i % 4   # Column index (0, 1, 2, or 3)
+        ax = axes[row_idx, col_idx]
+        
+        # Handle different image formats
+        if len(img.shape) == 2:  # Grayscale
+            im = ax.imshow(img, cmap=cmap)
+        elif len(img.shape) == 3:  # Color
+            if img.shape[2] == 1:  # Single channel
+                im = ax.imshow(img.squeeze(), cmap=cmap)
+            else:  # RGB/RGBA
+                im = ax.imshow(img)
+        else:
+            raise ValueError(f"Image {i} has unsupported shape: {img.shape}")
+        
+        # Set title if provided
+        if titles and i < len(titles):
+            ax.set_title(titles[i], fontsize=12, pad=10)
+        
+        # Remove axes ticks
+        ax.set_xticks([])
+        ax.set_yticks([])
+        
+        # Add row labels on the leftmost column
+        if col_idx == 0 and row_labels and row_idx < len(row_labels):
+            ax.set_ylabel(row_labels[row_idx], fontsize=9, color='blue',
+                         rotation=90, labelpad=10)
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    # Save figure if path provided
+    if save_path:
+        plt.savefig(save_path, dpi=dpi, bbox_inches='tight')
+        print(f"Figure saved to: {save_path}")
+    
+    return fig, axes

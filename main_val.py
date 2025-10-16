@@ -147,7 +147,7 @@ if __name__ == '__main__':
                                     name='SIREN',)
     wandb_logger.watch(siren_module, log="all")
 
-    trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger, accelerator='gpu', devices=1, strategy='ddp')
+    trainer = pl.Trainer(max_epochs=TRAINING_EPOCHS, logger=wandb_logger, accelerator='gpu', devices=1, strategy='ddp', determinstic=True)
     trainer.fit(siren_module, train_dataloaders=dataloader)
 
 

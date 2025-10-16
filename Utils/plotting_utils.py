@@ -1,19 +1,26 @@
 from matplotlib import pyplot as plt
 import torch
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 
 size = (87*2, 96*2)
 size_lf = (87,96)
 
 def plot_2_images(img1, img2, title1="img1", title2="img2", ):
     fig, axes = plt.subplots(1,2, figsize=(12,6))
+    shrink_val = 0.5
+
     im1 = axes[0].imshow(img1, cmap = 'gray')
     axes[0].set_title(title1)
-    fig.colorbar(im1, shrink = 0.6)
+    fig.colorbar(im1, shrink = shrink_val)
     im2 = axes[1].imshow(img2, cmap = 'gray')
     axes[1].set_title(title2)
-    fig.colorbar(im2,  shrink = 0.6)
-    # plt.show(block=False)
+    fig.colorbar(im2,  shrink = shrink_val)
+    
+
+    axes[0].set_axis_off()
+    axes[1].set_axis_off()
     return fig
 
 
@@ -35,7 +42,11 @@ def plot_4_images(img1, img2, img3, img4, title1="img1", title2="img2", title3="
     axes[2].set_title(title3)
     axes[3].set_title(title4)
 
-    # plt.show(block=False)
+    axes[0].set_axis_off()
+    axes[1].set_axis_off()
+    axes[2].set_axis_off()
+    axes[3].set_axis_off()
+    
     return fig
 
 def plot_5_images(img1, img2, img3, img4, img5, title1="img1", title2="img2", title3="img3", title4="img4", title5="img5"):
@@ -47,12 +58,12 @@ def plot_5_images(img1, img2, img3, img4, img5, title1="img1", title2="img2", ti
     im4 = axes[3].imshow(img4, cmap = 'gray')
     im5 = axes[4].imshow(img5, cmap = 'gray')
     # im6 = axes[4].imshow(img5, cmap='Reds' ,alpha= 0.9*(condition))
-    
-    fig.colorbar(im1, shrink = 0.4)
-    fig.colorbar(im2, shrink = 0.4)
-    fig.colorbar(im3, shrink = 0.4)
-    fig.colorbar(im4, shrink = 0.4)
-    fig.colorbar(im5, shrink = 0.4)
+    shrink_val = 0.5
+    fig.colorbar(im1, shrink = shrink_val)
+    fig.colorbar(im2, shrink = shrink_val)
+    fig.colorbar(im3, shrink = shrink_val)
+    fig.colorbar(im4, shrink = shrink_val)
+    fig.colorbar(im5, shrink = shrink_val)
     # fig.colorbar(im6, shrink = 0.4)
 
     axes[0].set_title(title1)
@@ -60,6 +71,12 @@ def plot_5_images(img1, img2, img3, img4, img5, title1="img1", title2="img2", ti
     axes[2].set_title(title3)
     axes[3].set_title(title4)
     axes[4].set_title(title5)
+
+    axes[0].set_axis_off()
+    axes[1].set_axis_off()
+    axes[2].set_axis_off()
+    axes[3].set_axis_off()
+    axes[4].set_axis_off()
 
     # plt.show(block=False)
     return fig

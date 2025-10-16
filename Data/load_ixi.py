@@ -65,7 +65,7 @@ def get_lf_observed_segmentations_sens(sens_folder, config):
 
 
 def get_hf_observed_segmentations(dataset_num, config):
-    folder = './Data/ixi/T1/' + str(dataset_num) + "/hf/"
+    folder = './Data/ixi/T1/' + str(dataset_num) + '/'
     slice = config["slice"]
     (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder)
     (wm_obs_seg, gm_obs_seg, csf_obs_seg, bg_obs_seg) = get_hf_tissue_seg(wm_nib, gm_nib, csf_nib)

@@ -70,7 +70,7 @@ class RandomPointsDataset(Dataset):
         spatial_dims = torch.tensor(self.dim_sizes, device=self.device)
         # spatial_dims = torch.tensor(self.dim_sizes)
         point_coords_norm = point_coords / (spatial_dims / 2) - 1
-
+        point_coords_norm += torch.randn_like(point_coords_norm) * 0.01 #adding gaussian noise  with std = 0.01
         return point_coords_norm, voxel_values, voxel_values_seg
 
 
