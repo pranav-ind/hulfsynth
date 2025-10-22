@@ -65,6 +65,7 @@ def get_lf_observed_segmentations_sens(sens_folder, config):
 
 
 def get_hf_observed_segmentations(dataset_num, config):
+    dataset_num = config["dataset_num"]
     folder = './Data/ixi/T1/' + str(dataset_num) + '/'
     slice = config["slice"]
     (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder)
@@ -77,8 +78,9 @@ def get_hf_observed_segmentations(dataset_num, config):
 
 
 
-def load_data(dataset_num, config=default_config):
+def load_data(config=default_config):
     slice = config["slice"]
+    dataset_num = config["dataset_num"]
     # random.seed(9600) #For Reproducibility -> using pl.seed_everything in main()
     # device = get_device() #Returns either MPS/CUDA/CPU depending on availability
 
@@ -109,9 +111,10 @@ def load_data(dataset_num, config=default_config):
 
 
 
-def load_sensitivity_data(dataset_num, config=default_config, sens_id = 1):
+def load_sensitivity_data(config=default_config):
     slice = config["slice"]
-    dataset_num = 102
+    dataset_num = config["dataset_num"]
+    sens_id = config["sens_id"]
     folder = './Data/ixi/T1/' + str(dataset_num) + "/"
     sens_folder = folder + 'sensitivity_data/contrast/' + str(sens_id)
 
@@ -133,7 +136,7 @@ def load_sensitivity_data(dataset_num, config=default_config, sens_id = 1):
                 
                 
     except FileNotFoundError:
-        print(f"Error: The file '{file_path}' was not found.")
+        print(f"Error: The file '{sens_folder + '/cnrs.txt'}' was not found.")
     except Exception as e:
         print(f"An error occurred: {e}")
     M = lines[-1]

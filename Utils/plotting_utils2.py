@@ -518,3 +518,86 @@ def plot_8_images_2rows(images, titles=None, figsize=(16, 8), cmap='gray', supti
         print(f"Figure saved to: {save_path}")
     
     return fig, axes
+
+
+def plot_3_images_row(images, titles=None, figsize=(12, 4), cmap='gray',  suptitle=None, save_path=None, dpi=100, show_colorbar=False):
+    """
+    Plot 3 images in a single row using matplotlib.
+    
+    Parameters:
+    -----------
+    images : list or array-like
+        List of 3 images to plot. Each image should be a numpy array.
+        Can be 2D (grayscale) or 3D (RGB/color) arrays.
+    titles : list, optional
+        List of 3 titles for each subplot. Default is None.
+    figsize : tuple, optional
+        Figure size as (width, height). Default is (12, 4).
+    cmap : str, optional
+        Colormap for grayscale images. Default is 'gray'.
+    suptitle : str, optional
+        Overall title for the entire figure. Default is None.
+    save_path : str, optional
+        Path to save the figure. If None, figure is not saved.
+    dpi : int, optional
+        DPI for saved figure. Default is 100.
+    show_colorbar : bool, optional
+        Whether to show colorbar for grayscale images. Default is False.
+    
+    Returns:
+    --------
+    fig, axes : matplotlib figure and axes objects
+    
+    Example:
+    --------
+    # With random images
+    images = [np.random.rand(100, 100) for _ in range(3)]
+    titles = ['Original', 'Processed', 'Result']
+    plot_3_images_row(images, titles=titles, suptitle='Image Processing Pipeline')
+    plt.show()
+    """
+    
+    if len(images) != 3:
+        raise ValueError("Exactly 3 images must be provided")
+    
+    # Create figure and subplots
+    fig, axes = plt.subplots(1, 3, figsize=figsize)
+    
+    # Set overall title if provided
+    if suptitle:
+        fig.suptitle(suptitle, fontsize=16, fontweight='bold', y=1.02)
+    
+    # Plot each image
+    for i, (ax, img) in enumerate(zip(axes, images)):
+        # Handle different image formats
+        if len(img.shape) == 2:  # Grayscale
+            im = ax.imshow(img, cmap=cmap)
+            if show_colorbar:
+                plt.colorbar(im, ax=ax, shrink=0.8)
+        elif len(img.shape) == 3:  # Color
+            if img.shape[2] == 1:  # Single channel
+                im = ax.imshow(img.squeeze(), cmap=cmap)
+                if show_colorbar:
+                    plt.colorbar(im, ax=ax, shrink=0.8)
+            else:  # RGB/RGBA
+                im = ax.imshow(img)
+        else:
+            raise ValueError(f"Image {i} has unsupported shape: {img.shape}")
+        
+        # Set title if provided
+        if titles and i < len(titles):
+            ax.set_title(titles[i], fontsize=12, pad=10, color = 'blue')
+        
+        # Remove axes ticks
+        ax.set_xticks([])
+        ax.set_yticks([])
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    # Save figure if path provided
+    if save_path:
+        plt.savefig(save_path, dpi=dpi, bbox_inches='tight')
+        print(f"Figure saved to: {save_path}")
+    
+    return fig, axes

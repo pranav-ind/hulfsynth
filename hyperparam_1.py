@@ -25,23 +25,28 @@ import pprint
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-id", )
+    parser.add_argument("-id", "--id", help="sens_id") #type: str
+    parser.add_argument("-dn", "--dn", help="dataset_num") 
     args = parser.parse_args()
-    sense_id = int(args.id)
+    sense_id = str(args.id)
+    dataset_num = str(args.dn)
     sweep_config = {
-        "name": "sweep_sens_id_" + str(sense_id),
+        "name": "sweep_sens_id_" + dataset_num + '__' + (sense_id),
         "method": "grid",
         "metric": {"goal": "maximize", "name": "rqs"},
         "parameters": 
         {    
         'id': {'values': [sense_id]},
-        'dn': {'values': [102]},
-        'an': {'values': ['SIREN']},
-        'l1': {'values': [50, 100, 150, 200]},
-        'l3': {'values': [10, 20, 30, 40]},
-        'l4': {'values': [ "[0.1, 0.1, 0.1, 0.1]" , "[0.99, 0.75, 0.75, 0.5]", "[2.5, 2.5, 2.5, 2.5]"]},
-        'l5': {'values': [ "[2.5, 0.1, 0.1, 0.1]" ]},
-        'epochs': {'values': [10000]}
+        'dn': {'values': [dataset_num]},
+        'an': {'values': ['WIRE']},
+        'l1': {'values': [100, 1000, 10000, 100000]},
+        'l3': {'values': [100]},
+        'l4': {'values': [ "[2.5, 0.1, 0.1, 0.1]", "[0.25, 0.25, 0.25, 0.25]", "[2.5, 0.6, 0.6, 0.6]" ]},
+        'l5': {'values': [ "[2.5, 0.1, 0.1, 0.1]", "[2.5, 0.3, 0.3, 0.3]", "[2.5, 0.6, 0.6, 0.6]" ]},
+        'fff' : {'values': [128]},
+        'ffs' : {'values': [4]},
+        'ffe': {'values': [True]},
+        
         } #refer documentation to define these values based on a distribution
 
     }
@@ -52,4 +57,4 @@ if __name__ == '__main__':
 
     # models_path = "./wandb/saved_models/"
     sweep_id = wandb.sweep(sweep=sweep_config, project="hulfsynth")
-    wandb.agent(sweep_id,  count=48)
+    wandb.agent(sweep_id,  count=36)

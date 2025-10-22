@@ -3,10 +3,12 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 import os
+from typing import Any, List
 from PIL import Image
 from torchvision.transforms import Resize, Compose, ToTensor, Normalize
 import numpy as np
 import skimage
+from pypiqe import piqe
 import matplotlib.pyplot as plt
 import time
 import monai
@@ -357,3 +359,49 @@ def segment(img_location, output_folder, t = 1, n_classes = 3, g = True, B = Tru
     '''
     fast(img_location, out= output_folder+'fast', g= g, B=B, n_classes=n_classes, t=t)
     return "Segmentation stored in " + output_folder
+
+def piqe_score(img):
+    # expecting a 2D image 
+    score, activityMask, noticeableArtifactMask, noiseMask = piqe(img)
+    return score
+
+class MSLC():
+    '''
+    Implementation: https://github.com/Bayer-Group/mr-image-metrics/tree/main
+    Reference: https://www.nature.com/articles/s41598-025-87358-0#data-availability
+    #TODO: This implementation is in Numpy. Modify it to PyTorch. 
+    Note: This is costly as the torch image tensor will be copied to cpu and converted to numpy
+    '''
+    def __init__(self) -> None:
+        pass
+    def corr(self, x: np.ndarray, y: np.ndarray) -> float:
+        if (x == y).all():
+            return 1.0
+        elif np.std(x) == 0 or np.std(y) == 0:
+            return 0.0
+        else:
+            return np.corrcoef(x, y)[0, 1]
+
+
+    def get_corrcoefs(self, image: np.ndarray, distance: int = 1) -> List[float]:
+        ces = []
+        for x in range(0, image.shape[0] - distance):
+            ces.append(self.corr(image[x, :], image[x + distance, :]))
+        for y in range(0, image.shape[1] - distance):
+            ces.append(self.corr(image[:, y], image[:, y + distance]))
+        return ces
+
+        """
+        Parameters:
+        -----------
+        image: np.array (H, W)
+            Reference image
+        """
+
+    def forward(self, image: np.ndarray, **kwargs: Any) -> float:
+            
+        ces = self.get_corrcoefs(image, distance=image.shape[1] // 2)
+        return np.array(ces).mean()
+    
+    def __call__(self, image: np.ndarray):
+        return self.forward(image)

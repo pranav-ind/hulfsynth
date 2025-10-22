@@ -133,6 +133,12 @@ class MLP(nn.Module):
 
 
 
+def initialize_activation_weights(name: str, network: MLP, SIREN_FACTOR: float, WIRE_OMEGA: float):
+    if(name=='SIREN'): #name of the activation function
+        initialize_siren_weights(network, SIREN_FACTOR)
+    else:
+        initialize_wire_weights(network, WIRE_OMEGA)
+
 
 def initialize_siren_weights(network: MLP, omega: float):
     

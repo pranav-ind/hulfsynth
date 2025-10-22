@@ -286,12 +286,14 @@ class GridSearch :
 
 
 
-def get_hf_observed_segmentations(dataset_num, config):
+def get_hf_observed_segmentations(config):
+    dataset_num = config["dataset_num"]
     folder = './Data/validation_data/sub_' + dataset_num +'/'
     hf_observed_nib, hf_wm_nib, hf_gm_nib, hf_csf_nib  = get_hf_observed(folder)
-    (hf_wm_seg, hf_gm_seg, hf_csf_seg, hf_bg_seg) = get_tissue_seg(hf_wm_nib, hf_gm_nib, hf_csf_nib)
+    (wm_obs_seg, gm_obs_seg, csf_obs_seg, bg_obs_seg) = get_tissue_seg(hf_wm_nib, hf_gm_nib, hf_csf_nib)
     # hf_observed_seg_dice = torch.stack((hf_bg_seg[0].reshape(config["size_lf"]), hf_wm_seg[0].reshape(config["size"]), hf_gm_seg[0].reshape(config["size"]), hf_csf_seg[0].reshape(config["size"])), dim=0).unsqueeze(0)
-    return (hf_wm_seg, hf_gm_seg, hf_csf_seg, hf_bg_seg)
+    (wm_obs_seg, gm_obs_seg, csf_obs_seg, bg_obs_seg) = (torch.from_numpy(wm_obs_seg), torch.from_numpy(gm_obs_seg), torch.from_numpy(csf_obs_seg), torch.from_numpy(bg_obs_seg))
+    return (wm_obs_seg, gm_obs_seg, csf_obs_seg, bg_obs_seg)
 
 def get_lf_observed_segmentations(dataset_num, config):
     folder = './Data/validation_data/sub_' + dataset_num +'/'
@@ -328,9 +330,10 @@ def forward(dataset_num='0011', target_type='ulf'):
     return hf_observed, lf_observed, M
     
     
-def load_val_data(dataset_num, target_type, config=default_config):
+def load_val_data(target_type, config=default_config):
     
     slice = config["slice"] 
+    dataset_num = config["dataset_num"]
     #Load HF, ULF observed
     
     hf_observed, lf_observed, M = forward(dataset_num, target_type) #Generating ULF observed
