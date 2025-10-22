@@ -306,7 +306,7 @@ def get_rois(dataset_num='0011', field_type='hf'):
     roi_snrs = lines[4:]
     return roi_voxels, roi_snrs
 
-def get_m(dataset_num='0011', target_type='hf'):
+def get_m(dataset_num='0011', target_type='hf', target_c=[1,1,1]):
     #m^{ULF} = get_m (c^{HF}, S^{ULF}) i.e., if target_type == ULF then S matrix should be from HF and if target_type == HF then S matrix should be ULF ;
     if(target_type == 'ulf'):
         S_type = 'hf'
@@ -320,7 +320,7 @@ def get_m(dataset_num='0011', target_type='hf'):
     s = np.array([[S_list[0], -S_list[1], 0], [S_list[0], 0, -S_list[2]], [0, S_list[1], -S_list[2]]]) #SNR matrix #S_list[0] = WM, S_list[1] = GM, S_list[2] = CSF
     # target_c = get_target_c(dataset_num, target_type)
     # target_c = np.array([19.59, 74.456, 54.86])
-    target_c = np.array([10.62876390679262, 36.76892223997362, 26.140158333180995])
+    # target_c = np.array([10.62876390679262, 36.76892223997362, 26.140158333180995])
     grid = GridSearch(s,target_c, upper_bound=upper_bound)
     grid_results = grid.solve()
     grid_results = grid.easy_results(grid_results)
@@ -346,7 +346,7 @@ def forward(dataset_num=1, c = np.array([9.03, 27.17, 18.14,])):
     # (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
     # s, _ = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
     # c = np.array([9.03, 27.17, 18.14,]) 
-    s, target_c, M = get_m(dataset_num, target_type='ulf')
+    s, target_c, M = get_m(dataset_num, target_type='ulf', target_c = c)
     print("SNR matrix:", s, "Target Contrast: " , target_c)
     grid = GridSearch(s,target_c)
     grid_results = grid.solve()
