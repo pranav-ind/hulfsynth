@@ -1,9 +1,8 @@
 # Citation
-If you have used this code, please consider citing the following paper:
-"HULFSynth : An INR based Super-Resolution and Ultra Low-Field MRI Synthesis via Contrast factor estimation", Pranav Indrakanti and Ivor Simpson. 
-https://arxiv.org/abs/2511.14897
+"HULFSynth : An INR based Super-Resolution and Ultra Low-Field MRI Synthesis via Contrast factor estimation", Pranav Indrakanti and Ivor Simpson (2025).
+Arxiv Preprint on https://arxiv.org/abs/2511.14897
 
-#Default hyperparameters :
+# Default hyperparameters :
 | Hyperparam |      Description      |    Default <br>value     |      Range       |                                           Notes                                            |
 | :--------: | :-------------------: | :----------------------: | :--------------: | :----------------------------------------------------------------------------------------: |
 |   $l_1$    |       MAE Recon       |           1e3            |    1e2 to 1e5    |                                Tuned in parallel with $l_2$                                |
