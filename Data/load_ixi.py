@@ -1,3 +1,9 @@
+'''
+- Loads all the data related to IXI dataset
+- Observed segmentations (both ULF and HF) are generated using FSL FAST
+- Check the directory structure
+'''
+
 import torchio as tio
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -11,14 +17,11 @@ import random
 from Utils.utils import get_device, norm
 import sys
 from PIL import Image
-from Data.ImagePreparation import ImagePreparation
 import numpy as np
 import ast
 
 
 # To download full IXI dataset use torchio - https://docs.torchio.org/datasets.html#module-torchio.datasets.ixi
-
-
 
 
 
@@ -38,10 +41,8 @@ def get_lf_observed_segmentations(dataset_num, config):
     lf_wm_seg = torch.from_numpy(nib.load(lf_wm_location).get_fdata())
     lf_gm_seg = torch.from_numpy(nib.load(lf_gm_location).get_fdata())
     lf_csf_seg = torch.from_numpy(nib.load(lf_csf_location).get_fdata())
-    # print(lf_wm_seg.shape)
     total_lf_seg = lf_wm_seg + lf_gm_seg + lf_csf_seg
     lf_bg_seg = 1 - total_lf_seg
-    # return lf_wm_seg.flatten().to(torch.float32).to(device).unsqueeze(0), lf_gm_seg.flatten().to(torch.float32).to(device).unsqueeze(0), lf_csf_seg.flatten().to(torch.float32).to(device).unsqueeze(0), lf_bg_seg.flatten().to(torch.float32).to(device).unsqueeze(0)
     return lf_wm_seg.flatten().to(torch.float32).unsqueeze(0), lf_gm_seg.flatten().to(torch.float32).unsqueeze(0), lf_csf_seg.flatten().to(torch.float32).unsqueeze(0), lf_bg_seg.flatten().to(torch.float32).unsqueeze(0)
 
 
@@ -55,10 +56,8 @@ def get_lf_observed_segmentations_sens(sens_folder, config):
     lf_wm_seg = torch.from_numpy(nib.load(lf_wm_location).get_fdata())
     lf_gm_seg = torch.from_numpy(nib.load(lf_gm_location).get_fdata())
     lf_csf_seg = torch.from_numpy(nib.load(lf_csf_location).get_fdata())
-    # print(lf_wm_seg.shape)
     total_lf_seg = lf_wm_seg + lf_gm_seg + lf_csf_seg
     lf_bg_seg = 1 - total_lf_seg
-    # return lf_wm_seg.flatten().to(torch.float32).to(device).unsqueeze(0), lf_gm_seg.flatten().to(torch.float32).to(device).unsqueeze(0), lf_csf_seg.flatten().to(torch.float32).to(device).unsqueeze(0), lf_bg_seg.flatten().to(torch.float32).to(device).unsqueeze(0)
     return lf_wm_seg.flatten().to(torch.float32).unsqueeze(0), lf_gm_seg.flatten().to(torch.float32).unsqueeze(0), lf_csf_seg.flatten().to(torch.float32).unsqueeze(0), lf_bg_seg.flatten().to(torch.float32).unsqueeze(0)
 
 
@@ -81,18 +80,15 @@ def get_hf_observed_segmentations(dataset_num, config):
 def load_data(config=default_config):
     slice = config["slice"]
     dataset_num = config["dataset_num"]
-    # random.seed(9600) #For Reproducibility -> using pl.seed_everything in main()
-    # device = get_device() #Returns either MPS/CUDA/CPU depending on availability
 
-    # lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = get_lf_observed_segmentations(dataset_num) #Load ULF Observed Segmentations
     
     #Load HF observed
     hf_loc = "./Data/ixi/T1/" + str(dataset_num)+ "/hf/fast_restore.nii.gz"
     hf_observed = nib.load(hf_loc).get_fdata()
     
-    (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), M = contrast_forward(dataset_num) #Generating ULF observed
+    (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), M = contrast_forward(dataset_num, c = np.array([2, 12, 7])) #Generating ULF observed
     config["M"] = M
-    # print(wm_lf_like.shape, lf_like.shape, wm_seg.shape, M)
+    
     #Load ULF observed
     lf_observed = norm(lf_like) #normalized
     
@@ -106,12 +102,13 @@ def load_data(config=default_config):
     lf_observed_seg_dice = torch.stack((lf_bg_seg[0].reshape(config["size_lf"]), lf_wm_seg[0].reshape(config["size_lf"]), lf_gm_seg[0].reshape(config["size_lf"]), lf_csf_seg[0].reshape(config["size_lf"])), dim=0).unsqueeze(0)
  
 
-    # return hf_observed, lf_dataloader, lf_observed, M #might need to uncomment this. lf_dataloader is the default used everywhere
     return hf_observed, lf_observed, lf_observed_seg_dice, M #might need to comment this
 
 
 
 def load_sensitivity_data(config=default_config):
+    #Refer gen_sens_data.py to generate sensitivity data
+    
     slice = config["slice"]
     dataset_num = config["dataset_num"]
     sens_id = config["sens_id"]
@@ -122,7 +119,7 @@ def load_sensitivity_data(config=default_config):
     hf_loc = folder + "/hf/fast_restore.nii.gz"
     hf_observed = nib.load(hf_loc).get_fdata()
     
-    # (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), M = contrast_forward(dataset_num) #Generating ULF observed
+    
     lf_loc = sens_folder + '/brain.nii.gz'
     lf_like = nib.load(lf_loc).get_fdata()
     lf_observed = norm(lf_like) #normalized
@@ -130,8 +127,6 @@ def load_sensitivity_data(config=default_config):
     try:
         with open( sens_folder + '/cnrs.txt', 'r') as file:
             for line in file:
-                # print(ast.literal_eval(line), type(ast.literal_eval(line)))
-                # temp = ast.literal_eval(((line.strip()).split(' ', 1)[1]))
                 lines.append(ast.literal_eval(line))
                 
                 
@@ -149,10 +144,7 @@ def load_sensitivity_data(config=default_config):
     
 
     lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = get_lf_observed_segmentations_sens(sens_folder, config)
-    # lf_wm_seg, lf_gm_seg, lf_csf_seg, lf_bg_seg = get_lf_observed_segmentations(dataset_num, config) #Load ULF Observed Segmentations
     lf_observed_seg_dice = torch.stack((lf_bg_seg[0].reshape(config["size_lf"]), lf_wm_seg[0].reshape(config["size_lf"]), lf_gm_seg[0].reshape(config["size_lf"]), lf_csf_seg[0].reshape(config["size_lf"])), dim=0).unsqueeze(0)
-
-
-    # return hf_observed, lf_dataloader, lf_observed, M #might need to uncomment this. lf_dataloader is the default used everywhere
+    
     return hf_observed, lf_observed, lf_observed_seg_dice, M #might need to comment this
 

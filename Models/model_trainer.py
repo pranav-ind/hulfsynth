@@ -26,7 +26,6 @@ from deepinv.loss.metric import LPIPS, HaarPSI
 
 
 
-from Models.models import Siren, Finer
 from Models.model import MLP, initialize_siren_weights, SineLayer, ReLULayer
 from Utils.utils import psnr, get_device, norm, normalize_psnr, MSLC, piqe_score
 from Utils.plotting_utils import plot_2_images, plot_4_images
@@ -44,7 +43,7 @@ class ContrastModulation:
         self.downsampled_points = config["downsampled_points"] #48*48*4
         self.config = config
 
-    def add_rician(self, size_lf, v=1e-3, s=1e-3):
+    def add_rician(self, size_lf, v=1e-1, s=1e-1):
         
         '''
             Adding Rician Noise using the magnitude of a Bivariate Normal Distribution with non-zero mean
@@ -125,16 +124,16 @@ class ModelTrainerModule(pl.LightningModule):
 
         # Logging
         self.wandb_logger = wandb_logger
-        self.name = name
-        self.hf_gt_im = hf_gt_im.to(self.dev)
-        self.lf_gt_im = lf_gt_im.to(self.dev)
-        self.lf_gt_seg = lf_gt_seg.to(self.dev)
-        self.hf_gt_seg = hf_gt_seg.to(self.dev)
+        self.name = name 
+        self.hf_gt_im = hf_gt_im.to(self.dev) #(H, W, D, 1)
+        self.lf_gt_im = lf_gt_im.to(self.dev)  #(H_lf, W_lf, D_lf, 1)
+        self.lf_gt_seg = lf_gt_seg.to(self.dev) #[1, 4, H_lf, W_lf, D]
+        self.hf_gt_seg = hf_gt_seg.to(self.dev) #[1, 4, H, W, D]
         self.eval_interval = eval_interval
         self.visualization_intervals = visualization_intervals
         self.progress_ims = []
         self.scores = []
-        self.dice = DiceCELoss(include_background=True,squared_pred = True, reduction='mean', jaccard=False)
+        self.dice = DiceCELoss(include_background=True, squared_pred = True, reduction='mean', jaccard=False)
         self.ssim_loss = monai.losses.ssim_loss.SSIMLoss(spatial_dims=3, win_size = (11,11,4))
         self.hf_chunk_size = config["hf_chunk_size"] #(96,96,4)
         self.lf_chunk_size = config["lf_chunk_size"] #(96//2,96//2,4)
@@ -154,9 +153,6 @@ class ModelTrainerModule(pl.LightningModule):
         self.lpips = LPIPS()
         self.haar = HaarPSI(norm_inputs="clip")
         self.mslc = MSLC()
-        
-
-        
         # self.perceptual_loss = PerceptualLoss(spatial_dims=3,network_type='medicalnet_resnet50_23datasets', is_fake_3d=False)
         self.gradient_loss = GradientLoss()
         pprint.pprint(self.config)
@@ -176,39 +172,32 @@ class ModelTrainerModule(pl.LightningModule):
         Computes loss for each chunk (batch)
         """
      
-        # mse_loss = (self.config["l1"] *  F.mse_loss(pred_lf, lf_gt)) #+ self.config["l1"] *  F.mse_loss(pred_lf, lf_gt)
-        # mse_loss = (self.config["l1"]) * (0.75 * F.l1_loss(pred_lf, lf_gt) + 0.25 * F.mse_loss(pred_lf, lf_gt)) #L1 + L2 combinational loss
-        # mse_loss = (self.config["l1"] * F.l1_loss(pred_lf, lf_gt))  #L1
-        # l2_norm = sum((p ** 2).sum() for p in self.parameters()) #L2
-        mse_loss = grad_loss = self.config["l1"] * (self.gradient_loss(pred_lf.reshape(self.config["lf_chunk_size"]).unsqueeze(0),lf_gt.reshape(self.config["lf_chunk_size"]).unsqueeze(0)))
+        
+        mse_loss = (self.config["l1"]) * (0.1 * F.l1_loss(pred_lf, lf_gt))# + 0.25 * F.mse_loss(pred_lf, lf_gt)) #L1 + L2 combinational loss
+        #grad_loss = self.config["l1"] * (self.gradient_loss(pred_lf.reshape(self.config["lf_chunk_size"]).unsqueeze(0),lf_gt.reshape(self.config["lf_chunk_size"]).unsqueeze(0)))
 
         dice_loss = self.config["l3"] * self.dice(pred_seg_dice, lf_gt_seg_dice)
        
         tv_loss_img = (self.config["l4"][0] * (total_variation(output_image_pre.reshape(self.hf_chunk_size)* output_seg_pre[:,0].reshape(self.hf_chunk_size), reduction ='mean').mean())) + (self.config["l4"][1] * (total_variation(output_image_pre.reshape(self.hf_chunk_size)* output_seg_pre[:,1].reshape(self.hf_chunk_size), reduction ='mean').mean())) + (self.config["l4"][2] * (total_variation(output_image_pre.reshape(self.hf_chunk_size)* output_seg_pre[:,2].reshape(self.hf_chunk_size), reduction ='mean').mean())) + (self.config["l4"][3] * (total_variation(output_image_pre.reshape(self.hf_chunk_size)* output_seg_pre[:,3].reshape(self.hf_chunk_size), reduction ='mean').mean()))
-        tv_loss_seg = self.config["l5"][0] * (total_variation(output_seg_pre[:,0].reshape(self.hf_chunk_size), reduction='mean').mean()) + (self.config["l5"][1] * (total_variation(output_seg_pre[:,1].reshape(self.hf_chunk_size), reduction='mean').mean())) +  (self.config["l5"][2] * (total_variation(output_seg_pre[:,2].reshape(self.hf_chunk_size), reduction='mean').mean())) + (self.config["l5"][3] * (total_variation(output_seg_pre[:,3].reshape(self.hf_chunk_size), reduction='mean').mean()))
-
-        # torch.use_deterministic_algorithms(False, warn_only =True)
-        # percep_loss = 0.1 + 1e4*(self.perceptual_loss(pred_lf.reshape(self.config["lf_chunk_size"]).unsqueeze(0).unsqueeze(0), lf_gt.reshape(self.config["lf_chunk_size"]).unsqueeze(0).unsqueeze(0)))
-        
+        tv_loss_seg = self.config["l5"][0] * (total_variation(output_seg_pre[:,0].reshape(self.hf_chunk_size), reduction='mean').mean()) + (self.config["l5"][1] * (total_variation(output_seg_pre[:,1].reshape(self.hf_chunk_size), reduction='mean').mean())) +  (self.config["l5"][2] * (total_variation(output_seg_pre[:,2].reshape(self.hf_chunk_size), reduction='mean').mean())) + (self.config["l5"][3] * (total_variation(output_seg_pre[:,3].reshape(self.hf_chunk_size), reduction='mean').mean()))        
         loss = dice_loss + mse_loss + tv_loss_img + tv_loss_seg #+ grad_loss
         print("loss: ", loss.item(), mse_loss.item(),  dice_loss.item(),  tv_loss_img.item(), tv_loss_seg.item())
         
         return loss, mse_loss, dice_loss, tv_loss_img, tv_loss_seg
 
     def compute_rqs(self, pred_hf_im, pred_hf_seg, pred_lf_im, pred_lf_seg):
-        # pred_im, pred_hf_seg, pred_lf_im
+        # pred_hf_im, pred_hf_seg were used in earlier version for validation
         """
         - Computes Reconstruction Quality Score (rqs): a fusion metric of dice score, IoU score, SSIM and PSNR. 
         - This score is calculated for predicted against observed ULF (not High-Field)
         - This score is used for hyperparameter tuning to indicate the quality of our reconstruction
         - Note: this measure is not a final metric that validates our approach. We use the same metrics (dice/iou and ssim/psnr) to measure predicted HF data and observed HF data
         """
+        
         slice_num = self.config["slice"]
-        # pred_lf_im = self.contrast_modulation(pred_hf_seg, pred_hf_im, self.config)
         pred_lf_im = pred_lf_im.reshape(self.lf_gt_im.shape[:-1])
- 
 
-        # RQS = (0.3 * dice) + (0.2 * iou) + (0.3 * ssim) + (0.2 * psnr) -> slightly more biased towards structural indices (dice/ssim)
+        
         psnr_ = self.psnr_value(pred_lf_im.unsqueeze(0), self.lf_gt_im.permute(3,0,1,2))
         ssim_ = self.ssim_value(pred_lf_im.unsqueeze(0).unsqueeze(0), self.lf_gt_im.permute(3,0,1,2).unsqueeze(0))
         dice_ = self.dice_score(pred_lf_seg.unsqueeze(0), self.lf_gt_seg).mean()
@@ -220,21 +209,14 @@ class ModelTrainerModule(pl.LightningModule):
         haar_ = self.haar(pred_lf_im.unsqueeze(0).permute(3,0,1,2)[slice_num-middle_slices:slice_num+middle_slices], self.lf_gt_im[:,:,:,0].unsqueeze(0).permute(3,0,1,2)[slice_num-middle_slices:slice_num+middle_slices]).mean()
         mslc_ = torch.tensor([self.mslc(pred_lf_im[:,:,i].cpu().numpy()) for i in range(slice_num-middle_slices, slice_num+middle_slices)]).mean() #computing MSLC scor for middle 10 slices
         piqe_ = torch.tensor([piqe_score(pred_lf_im[:,:,i].cpu().numpy()) for i in range(slice_num-middle_slices, slice_num+middle_slices)]) #computing PIQE scor for middle 10 slices
-        print("piqe_lf: ", piqe_)
         piqe_ = piqe_.mean()
-        # dice_ = dice_.mean()
-        # iou_ = iou_.mean()
-        # dice2 = dice2.mean()
         normalized_psnr_ = normalize_psnr(psnr_) #normalizing to [0, 1] i.e., maps : [15.0, 30.0] -> [0, 1]
         mslc_inv = 1.0 - mslc_
 
-        seg_score = (0.15 * dice2) + (0.15 * iou_) #calculates how the structural fidelity of ULF segmentations
-        # img_score = (0.3 * ssim_) + (0.2 * normalized_psnr_) #calculates image metrics of ULF predictions
-        img_score = (0.5 * ssim_) + (0.2 * mslc_inv)
-        rqs_ = seg_score + img_score #(50% SSIM + 20% MSLC + 30% segmentaion)
-
-        
-        # return rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_, lpips_, haar_
+        seg_score = (0.3 * dice2) + (0.2 * iou_) #calculates how the structural fidelity of ULF segmentations
+        img_score = (0.35 * ssim_) + (0.15 * mslc_inv)
+        rqs_ = seg_score + img_score #(35% SSIM + 15% MSLC + 50% segmentaion)
+    
         return rqs_, dice2, iou_, ssim_, psnr_, normalized_psnr_, lpips_, haar_, mslc_, piqe_
 
 
@@ -250,19 +232,15 @@ class ModelTrainerModule(pl.LightningModule):
         coords = coords.view(-1, coords.shape[-1]) #coord input of each batch
         lf_batch = lf_batch.view(-1, lf_batch.shape[-1]) #lf_gt of each batch
         
-        
         output_image, output_image_pre, output_seg, output_seg_pre = self.forward(coords) #shape(*hf_chunk), (*hf_chunk), (*hf_chunk, 4), (*hf_chunk, 4)
-        # output_image_lf = F.interpolate(output_image.unsqueeze(0).unsqueeze(0).squeeze(-1), scale_factor=0.25).squeeze(0) #TODO: Replace F.interpolate with your forward model
         output_image_lf = self.phi.forward(output_image, output_seg, self.M)
         
         
-        # pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), scale_factor=0.25).squeeze(0).squeeze(0)).reshape(self.lf_chunk_size) for i in range(output_seg.shape[-1])] #downsampling pred_seg
         pred_seg = [(F.interpolate(output_seg[:,i].unsqueeze(0).unsqueeze(0), size=self.downsampled_points).squeeze(0).squeeze(0)).reshape(self.lf_chunk_size) for i in range(output_seg.shape[-1])] #downsampling pred_seg
         pred_seg = torch.stack(pred_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
         lf_batch_seg = [lf_batch_seg[:,i].reshape(lf_chunk_size) for i in range(lf_batch_seg[0].shape[0])]
         lf_batch_seg = torch.stack(lf_batch_seg,axis = 0).unsqueeze(0) # shape(1,4 48, 48, 4)
-        
-        
+    
 
         #Compute Losses
         loss, mse_loss, dice_loss, tv_loss_img, tv_loss_seg = self.compute_loss(output_image_lf, lf_batch, output_image_pre, pred_seg, lf_batch_seg, output_seg_pre)
@@ -303,14 +281,14 @@ class ModelTrainerModule(pl.LightningModule):
             pred_hf_seg = [pred_hf_seg[i].reshape(self.hf_gt_im.shape[:-1]) for i in range(pred_hf_seg.shape[0])]
             pred_hf_seg = torch.stack(pred_hf_seg,axis = 0).unsqueeze(0) # shape(1,4 *H, *W, *D)
             iou_hf = self.iou_score(pred_hf_seg, self.hf_gt_seg).mean()
-            dice2_hf = self.dice2(pred_hf_seg, self.hf_gt_seg).mean()
+            # dice2_hf = self.dice2(pred_hf_seg, self.hf_gt_seg).mean() #Generalized dice score
+            dice2_hf = self.dice_score(pred_hf_seg, self.hf_gt_seg).mean() #Mean dice score
 
-            # print("min and max values: ", final_img.min().item(), final_img.max().item(), self.hf_gt_im.min().item(), self.hf_gt_im.max().item(), pred_im.min().item(), pred_im.max().item())
+            
             #Calculating HF Image Metrics
             psnr_hf =  self.psnr_value(pred_im.unsqueeze(0).unsqueeze(0), self.hf_gt_im.permute(3,0,1,2).unsqueeze(0))
             ssim_hf =  self.ssim_value(pred_im.unsqueeze(0).unsqueeze(0), self.hf_gt_im.permute(3,0,1,2).unsqueeze(0))
             lpips_hf = self.lpips(pred_im.unsqueeze(0).permute(3,0,1,2)[slice_num-5:slice_num+5], self.hf_gt_im[:,:,:,0].unsqueeze(0).permute(3,0,1,2)[slice_num-5:slice_num+5]).mean() #computing score for middle 10 slices
-            # haar_hf = self.haar(pred_im.unsqueeze(0).permute(3,0,1,2)[slice_num-5:slice_num+5], self.hf_gt_im[:,:,:,0].unsqueeze(0).permute(3,0,1,2)[slice_num-5:slice_num+5]).mean()
             psnr_hf_final =  self.psnr_value(final_img.unsqueeze(0).unsqueeze(0), self.hf_gt_im.permute(3,0,1,2).unsqueeze(0))
             ssim_hf_final =  self.ssim_value(final_img.unsqueeze(0).unsqueeze(0), self.hf_gt_im.permute(3,0,1,2).unsqueeze(0))
             lpips_hf_final = self.lpips(final_img.unsqueeze(0).permute(3,0,1,2)[slice_num-5:slice_num+5], self.hf_gt_im[:,:,:,0].unsqueeze(0).permute(3,0,1,2)[slice_num-5:slice_num+5]).mean() #computing score for middle 10 slices
@@ -320,8 +298,8 @@ class ModelTrainerModule(pl.LightningModule):
 
             print("LF scores: ", rqs_, dice_, iou_, ssim_, psnr_, normalized_psnr_, lpips_, haar_, mslc_, piqe_) #used for hyperparameter tuning
             print("HF scores: ", psnr_hf, ssim_hf, iou_hf, dice2_hf, lpips_hf_final, haar_hf_final, mslc_final, piqe_final)
-            
             piqe_final = piqe_final.mean()
+            
             #plots
             print("plotting all images.....")
             titles = ['BG', 'WM', 'GM', 'CSF']
@@ -376,10 +354,8 @@ class ModelTrainerModule(pl.LightningModule):
         pred_seg_ = pred_seg_.reshape(resolution_seg)
         pred_seg = [pred_seg_[:,:,:,i].reshape(resolution) for i in range(pred_seg_.shape[-1])]
         pred_seg = torch.stack(pred_seg, axis = 0) 
-        # pred_lf = self.contrast_modulation(pred_seg, predictions_hf, self.config)
         print("sample at resolution: ", pred_seg.shape, predictions_hf.shape)
         pred_lf = self.phi.forward_inference(pred_seg, predictions_hf) #contrast modulation
-
         return predictions_hf, pred_seg, pred_lf #output shapes- predictions_hf: (H, W, D,); pred_seg: (num_classes, H, W, D), pred_lf: (H_lf, W_lf, D_lf)
 
 
@@ -409,7 +385,7 @@ class PosEncINRLightningModule(ModelTrainerModule):
 
 
 class GradientLoss(nn.Module):
-#edge-prserving loss function
+    #edge-prserving loss function used as reconstruction loss
     def __init__(self, weight=0.1):
         super().__init__()
         self.weight = weight

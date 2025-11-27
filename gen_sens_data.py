@@ -1,3 +1,7 @@
+'''
+This script was used to generate sensitivity data from prior c values with Rician noise...
+'''
+
 import torch
 import pandas as pd
 import numpy as np
@@ -81,6 +85,7 @@ write_folder = './Data/ixi/T1/' + str(dataset_num) + '/sensitivity_data/contrast
 (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_seg)
 # (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
 
+#c values are generated from prior knowledge
 c_list = (
 np.array([19.591889626325028, 74.45619024020756, 54.86430061388253]),
 np.array([13.309712111059078, 35.49778633247732, 22.18807422141824]),

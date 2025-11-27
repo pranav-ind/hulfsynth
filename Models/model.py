@@ -1,3 +1,7 @@
+
+'''
+Credits : MICCAI Tutorial; https://github.com/INR4MICCAI/INRTutorial/tree/main
+'''
 import math
 import torch
 from torch import nn
@@ -195,7 +199,7 @@ def initialize_wire_weights(network: MLP, omega: float):
 
 
 
-#Test case:
+# Test:
 '''
 SIREN_FACTOR = 30.0 
 siren_inr = MLP(in_size=3,

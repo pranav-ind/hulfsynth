@@ -8,6 +8,7 @@ size = (87*2, 96*2)
 size_lf = (87,96)
 
 def plot_2_images(img1, img2, title1="img1", title2="img2", ):
+    #plots 2 images in a row
     fig, axes = plt.subplots(1,2, figsize=(12,6))
     shrink_val = 0.5
 
@@ -25,7 +26,7 @@ def plot_2_images(img1, img2, title1="img1", title2="img2", ):
 
 
 def plot_4_images(img1, img2, img3, img4, title1="img1", title2="img2", title3="img3", title4="img4"):
-
+    #plots 4 images in a row
     fig, axes = plt.subplots(1,4, figsize=(20,6))
     im1 = axes[0].imshow(img1, cmap = 'gray')
     im2 = axes[1].imshow(img2, cmap = 'gray')
@@ -50,7 +51,7 @@ def plot_4_images(img1, img2, img3, img4, title1="img1", title2="img2", title3="
     return fig
 
 def plot_5_images(img1, img2, img3, img4, img5, title1="img1", title2="img2", title3="img3", title4="img4", title5="img5"):
-
+    #plots 5 images in a row
     fig, axes = plt.subplots(1,5, figsize=(20,6))
     im1 = axes[0].imshow(img1, cmap = 'gray')
     im2 = axes[1].imshow(img2, cmap = 'gray')
@@ -132,7 +133,7 @@ def plot_intermediate_results(model_output_img, lf_output, coords):
     hf_int_result = model_output_img[:,:,0] + model_output_img[:,:,1] + model_output_img[:,:,2] + model_output_img[:,:,3] #Intermediate High-Field Result
     img_grad = gradient(hf_int_result, coords)
     img_laplacian = laplace(hf_int_result, coords)
-    clear_output(wait=True)
+    clear_output(wait=True) #need to define this 
     fig, axes = plt.subplots(1,4, figsize=(20,6))
     axes[0].imshow(lf_output.cpu().view(size_lf).detach().numpy(), cmap = 'gray')
     axes[1].imshow(hf_int_result.cpu().view(size).detach().numpy(), cmap = 'gray')

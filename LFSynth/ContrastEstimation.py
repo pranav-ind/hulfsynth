@@ -1,3 +1,8 @@
+'''
+- This file contains necessary functions that compute the contrast factor (used for IXI dataset)
+- GridSearch() for solution to system of contrast equations
+'''
+
 import torch
 import pandas as pd
 import numpy as np
@@ -11,9 +16,6 @@ from matplotlib import pyplot as plt
 import nibabel as nib
 import matplotlib as mpl
 from skimage.exposure import match_histograms
-# from nilearn import image
-# from nilearn import plotting
-# from tkinter import filedialog as fd
 from scipy.ndimage import gaussian_filter
 import math
 from scipy import optimize, stats
@@ -66,59 +68,17 @@ def seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg):
 
     return (wm, gm, csf, bg, hf_img)
 
-# def get_rois(dataset_num='0011', field_type='hf'):
-#     file_path = './Data/validation_data/sub_' + dataset_num + '/' + field_type + '/snrs.txt'
-#     lines = []
-#     try:
-#         with open(file_path, 'r') as file:
-#             for line in file:
-#                 lines.append(ast.literal_eval(((line.strip()).split(' ', 1)[1])))
-                
-#     except FileNotFoundError:
-#         print(f"Error: The file '{file_path}' was not found.")
-#     except Exception as e:
-#         print(f"An error occurred: {e}")
-#     roi_voxels = lines[:4]
-#     roi_snrs = lines[4:]
-#     return roi_voxels, roi_snrs
-
-def calc_ixi_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset):
-    rayleigh_correction = 1.53
-    if(dataset ==102):
-        #ROIs are extracted manually. For example, refer roi_gen.ipynb 
-        slice_num = 90
-        wm_roi_pixels = img_nib.get_fdata()[108:122, 121:161, slice_num][wm_nib.get_fdata()[108:122, 121:161, slice_num]>0.9]
-        gm_roi_pixels = img_nib.get_fdata()[24:29, 96:106, slice_num][gm_nib.get_fdata()[24:29, 96:106, slice_num]>0.9]
-        csf_roi_pixels = img_nib.get_fdata()[84:88, 128:136, slice_num][csf_nib.get_fdata()[84:88, 128:136, slice_num]>0.9]
-    
-    noise_file = "./Data/ixi/T1/" + str(dataset) + "/hf/raw.nii.gz"
-    noise = nib.load(noise_file)
-    # print("BG Noise in different regions :", noise.get_fdata()[:20,:20,95].std(), noise.get_fdata()[150:175,150:175,95].std(), noise.get_fdata()[155:,:25,95].std(), noise.get_fdata()[:25,150:170,95].std()) #Mean of all 4 regions in background
-    
-    std_bg = noise.get_fdata()[:,163,:][55:79, 6:16, ].std() #Background Noise extracted manually
-
-    csf_snr = csf_roi_pixels.mean()/ (std_bg * rayleigh_correction)
-    gm_snr = gm_roi_pixels.mean()/ (std_bg * rayleigh_correction)
-    wm_snr = wm_roi_pixels.mean()/ (std_bg * rayleigh_correction)
-    print("SNRs- WM: ", wm_snr, "GM: ", gm_snr, "CSF: ", csf_snr, "BG (std): ", std_bg)
-
-    Ccg = abs(csf_snr - gm_snr) 
-    Ccw = abs(csf_snr - wm_snr)
-    Cgw = abs(gm_snr - wm_snr)
-
-    print("CNRs- WG: ", Cgw, "WC: ", Ccw, "GC: ", Ccg)
-    return (wm_snr, gm_snr, csf_snr)
 
 
 
 
 def calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset):
 
-    #for dataset = 1 and 2 only
+    #for dataset = 1 and 2 only; dataset 1 and 2 are old datasets (FSL example datasets); No longer used
     rayleigh_correction = 1.53
 
     if(dataset ==1):
-        #ROIs are extracted manually. For example, refer roi_gen.ipynb 
+        #ROIs are extracted manually. Refer roi_gen.ipynb 
         wm_roi_pixels = img_nib.get_fdata()[99:109,145:155,95][wm_nib.get_fdata()[99:109,145:155,95]>0.9]
         gm_roi_pixels = img_nib.get_fdata()[76:80, 123:128,95][gm_nib.get_fdata()[76:80, 123:128,95]>0.9]
         csf_roi_pixels = img_nib.get_fdata()[82:86,119:128,95][csf_nib.get_fdata()[82:86,119:128,95]>0.9]
@@ -143,43 +103,21 @@ def calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset):
     gm_snr = gm_roi_pixels.mean()/ (std_bg * rayleigh_correction)
     wm_snr = wm_roi_pixels.mean()/ (std_bg * rayleigh_correction)
 
-
+    #computing contrast for testing
+    '''
     Ccg = abs(csf_snr - gm_snr) 
     Ccw = abs(csf_snr - wm_snr)
     Cgw = abs(gm_snr - wm_snr)
+    '''
 
     return (wm_snr, gm_snr, csf_snr)
 
-
-def toy_values(wm_snr, gm_snr, csf_snr, dataset):
-    # known_m = np.array([0.6, 0.6, 0.3]) #other values
-    # known_m = np.array([0.7, 0.3, 0.2]) #other values
-    # known_m = np.array([0.5, 0.6, 0.2]) #dataset = 1 #base
-
-    if(dataset ==1):
-        # known_m = np.array([0.75, 0.85, 0.9]) #dataset = 1 #id = 1
-        known_m = np.array([0.5, 0.6, 0.2]) #dataset = 1 #base
-        # known_m = np.array([0.4, 0.5, 0.5]) #dataset = 1 #id = 2
-        # known_m = np.array([0.6, 0.6, 0.3]) #dataset = 1 #id = 3
-        # known_m = np.array([0.5, 0.5, 0.2]) #dataset = 1 #id = 4
-        known_m = np.array([0.75, 0.9, 0.9])
-
-
-    else:
-        # known_m = np.array([0.4, 0.5, 0.2]) #dataset = 2
-        known_m = np.array([0.5, 0.6, 0.2]) #dataset = 1
-    # s = np.array([[wm_snr, 0, -csf_snr], [wm_snr, -gm_snr, 0], [0, gm_snr, -csf_snr] ]) #SNR matrix
-    s = np.array([[wm_snr, -gm_snr, 0], [wm_snr, 0, -csf_snr], [0, gm_snr, -csf_snr] ]) #SNR matrix
-    c = toy_c = s @known_m
-    print("known_m = ", known_m, "c vector: ",c)
-    return s, c
 
 
 class GridSearch :
   
   def __init__(self, s, c, upper_bound=1):
     self.param_m = [0.1, 0.15, 0.2, 0.25 , 0.3, 0.35 , 0.4, 0.5] #init M search space
-    # self.param_m = [0.1, 0.2, 0.3, 0.4, 0.5]
     self.param_epsilon =  [0, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5] #regularization_strength search space
     self.solver = 'trust-constr'
     self.limits = Bounds(0,upper_bound)
@@ -219,9 +157,7 @@ class GridSearch :
         self.m = np.ones(self.c.shape[0]) * i
         self.epsilon = j
         self.losses = []
-        # print("Before optim", self.m)
         self.res = minimize(self.obj_function, self.m, bounds=self.limits, method=self.solver,)
-        # print("After optim", self.res.x)
         self.results["m_init"].append(self.m)
         self.results["epsilon"].append(self.epsilon)
         self.results["loss"].append(self.losses)
@@ -274,7 +210,6 @@ def recombine(wm, gm, csf, bg, M):
     return wm_new, gm_new, csf_new, bg_new, lf_img
 
 def add_rician(size_lf, v = 2, s = 3):
-    # v =8, s = 5
     '''
         Adding Rician Noise using the magnitude of a Bivariate Normal Distribution with non-zero mean
         Reference : https://en.wikipedia.org/wiki/Rice_distribution
@@ -316,11 +251,7 @@ def get_m(dataset_num='0011', target_type='hf', target_c=[1,1,1]):
         upper_bound = np.inf
     rayleigh_correction = 1.53
     _, S_list = get_rois(dataset_num, field_type=S_type)
-    # print("S list", S_list)
     s = np.array([[S_list[0], -S_list[1], 0], [S_list[0], 0, -S_list[2]], [0, S_list[1], -S_list[2]]]) #SNR matrix #S_list[0] = WM, S_list[1] = GM, S_list[2] = CSF
-    # target_c = get_target_c(dataset_num, target_type)
-    # target_c = np.array([19.59, 74.456, 54.86])
-    # target_c = np.array([10.62876390679262, 36.76892223997362, 26.140158333180995])
     grid = GridSearch(s,target_c, upper_bound=upper_bound)
     grid_results = grid.solve()
     grid_results = grid.easy_results(grid_results)
@@ -331,7 +262,7 @@ def get_m(dataset_num='0011', target_type='hf', target_c=[1,1,1]):
     return s, target_c, M
 
 
-def forward(dataset_num=1, c = np.array([9.03, 27.17, 18.14,])):
+def forward(dataset_num=1, c=None):
     '''
     This function will generate the ground truth data for a given IXI HF Image for the given contrast vector
     '''
@@ -343,27 +274,22 @@ def forward(dataset_num=1, c = np.array([9.03, 27.17, 18.14,])):
     (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder)
     (wm_seg, gm_seg, csf_seg, bg_seg) = get_hf_tissue_seg(wm_nib, gm_nib, csf_nib)
     (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_seg)
-    # (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
-    # s, _ = toy_values(wm_snr, gm_snr, csf_snr, dataset_num)
     # c = np.array([9.03, 27.17, 18.14,]) 
     s, target_c, M = get_m(dataset_num, target_type='ulf', target_c = c)
     print("SNR matrix:", s, "Target Contrast: " , target_c)
     grid = GridSearch(s,target_c)
     grid_results = grid.solve()
     grid_results = grid.easy_results(grid_results)
-    # print(grid_results)
     M = grid.select_solution(grid_results)
     print("Solution : ", M)
     print("Target Contrast: " , target_c, "Achieved contrast: ", s@M)
     (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like) = recombine(wm, gm, csf, bg, M)
-    # lf_like = lf_like + np.random.normal(2, 0.75, size=lf_like.shape) #adding gaussian noise
-    # lf_like = lf_like + add_rician(lf_like.shape) #adding rician noise
     mask = np.where(lf_like>0 ,1.0, 0.0) #mask to get foreground voxels
     lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15) * mask) #adding rician noise only to foreground voxels
-    # lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15)) #adding rician noise only to foreground voxels
+    # lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15)) #adding rician noise only to foreground + bg voxels
     
 
-    # plot_4_images(wm_lf_like, gm_lf_like, csf_lf_like, lf_like)#,vmax=[100, 100, 100, 100])
+    
     return (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), M
 # forward(dataset_num = 1)
 
@@ -407,24 +333,69 @@ def forward_sens(dataset_num=1, c = np.array([9.03, 27.17, 18.14,])):
     print("Solution : ", M)
     print("Target Contrast: " , target_c, "Achieved contrast: ", s@M)
     (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like) = recombine(wm, gm, csf, bg, M)
-    # lf_like = lf_like + np.random.normal(2, 0.75, size=lf_like.shape) #adding gaussian noise
-    # lf_like = lf_like + add_rician(lf_like.shape) #adding rician noise
-    mask = np.where(lf_like>0 ,1.0, 0.0) #mask to get foreground voxels
-    lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15) * mask) #adding rician noise only to foreground voxels
-    # lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15)) #adding rician noise only to foreground voxels
     
-
-    # plot_4_images(wm_lf_like, gm_lf_like, csf_lf_like, lf_like)#,vmax=[100, 100, 100, 100])
+    mask = np.where(lf_like>0 ,1.0, 0.0) #mask to get foreground voxels
+    # lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15)) #adding rician noise only to all voxels (including background)
+    lf_like = lf_like + (add_rician(lf_like.shape, v = 5, s = 15) * mask) #adding rician noise only to foreground voxels
+    
     return (wm_lf_like, gm_lf_like, csf_lf_like, bg_lf_like, lf_like), (wm_seg, gm_seg, csf_seg, bg_seg), M
 
+#unused
+def calc_ixi_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset):
+    rayleigh_correction = 1.53
+    if(dataset ==102):
+        #ROIs are extracted manually. For example, refer roi_gen.ipynb 
+        slice_num = 90
+        wm_roi_pixels = img_nib.get_fdata()[108:122, 121:161, slice_num][wm_nib.get_fdata()[108:122, 121:161, slice_num]>0.9]
+        gm_roi_pixels = img_nib.get_fdata()[24:29, 96:106, slice_num][gm_nib.get_fdata()[24:29, 96:106, slice_num]>0.9]
+        csf_roi_pixels = img_nib.get_fdata()[84:88, 128:136, slice_num][csf_nib.get_fdata()[84:88, 128:136, slice_num]>0.9]
+    
+    noise_file = "./Data/ixi/T1/" + str(dataset) + "/hf/raw.nii.gz"
+    noise = nib.load(noise_file)
+    # print("BG Noise in different regions :", noise.get_fdata()[:20,:20,95].std(), noise.get_fdata()[150:175,150:175,95].std(), noise.get_fdata()[155:,:25,95].std(), noise.get_fdata()[:25,150:170,95].std()) #Mean of all 4 regions in background
+    
+    std_bg = noise.get_fdata()[:,163,:][55:79, 6:16, ].std() #Background Noise extracted manually
 
+    csf_snr = csf_roi_pixels.mean()/ (std_bg * rayleigh_correction)
+    gm_snr = gm_roi_pixels.mean()/ (std_bg * rayleigh_correction)
+    wm_snr = wm_roi_pixels.mean()/ (std_bg * rayleigh_correction)
+    print("SNRs- WM: ", wm_snr, "GM: ", gm_snr, "CSF: ", csf_snr, "BG (std): ", std_bg)
+
+    Ccg = abs(csf_snr - gm_snr) 
+    Ccw = abs(csf_snr - wm_snr)
+    Cgw = abs(gm_snr - wm_snr)
+
+    print("CNRs- WG: ", Cgw, "WC: ", Ccw, "GC: ", Ccg)
+    return (wm_snr, gm_snr, csf_snr)
+
+
+def toy_values(wm_snr, gm_snr, csf_snr, dataset):
+    # known_m = np.array([0.6, 0.6, 0.3]) #other values
+    # known_m = np.array([0.7, 0.3, 0.2]) #other values
+    # known_m = np.array([0.5, 0.6, 0.2]) #dataset = 1 #base
+
+    if(dataset ==1):
+        # known_m = np.array([0.75, 0.85, 0.9]) #dataset = 1 #id = 1
+        known_m = np.array([0.5, 0.6, 0.2]) #dataset = 1 #base
+        # known_m = np.array([0.4, 0.5, 0.5]) #dataset = 1 #id = 2
+        # known_m = np.array([0.6, 0.6, 0.3]) #dataset = 1 #id = 3
+        # known_m = np.array([0.5, 0.5, 0.2]) #dataset = 1 #id = 4
+        known_m = np.array([0.75, 0.9, 0.9])
+
+
+    else:
+        # known_m = np.array([0.4, 0.5, 0.2]) #dataset = 2
+        known_m = np.array([0.5, 0.6, 0.2]) #dataset = 1
+    s = np.array([[wm_snr, -gm_snr, 0], [wm_snr, 0, -csf_snr], [0, gm_snr, -csf_snr] ]) #SNR matrix
+    c = toy_c = s @known_m
+    print("known_m = ", known_m, "c vector: ",c)
+    return s, c
 
 def generate_sensitivity_data(dataset_num=102, c = np.array([9.03, 27.17, 18.14,]) ):
     folder = './Data/ixi/T1/' + str(dataset_num) + "/"
     (img_nib, wm_nib, gm_nib, csf_nib) = read_imgs(folder)
     (wm_seg, gm_seg, csf_seg, bg_seg) = get_hf_tissue_seg(wm_nib, gm_nib, csf_nib)
     (wm, gm, csf, bg, hf) = seg_to_intenities(img_nib, wm_nib, gm_nib, csf_nib, bg_seg)
-    # (wm_snr, gm_snr, csf_snr) = calc_hf_snr(img_nib, wm_nib, gm_nib, csf_nib, dataset_num)
     s, target_c, M = get_m(dataset_num, target_type='ulf')
     print("Solution : ", M)
     print("Target Contrast: " , target_c, "Achieved contrast: ", s@M)
@@ -437,7 +408,24 @@ def generate_sensitivity_data(dataset_num=102, c = np.array([9.03, 27.17, 18.14,
 
 
 
-    
 
+
+'''
+def get_rois(dataset_num='0011', field_type='hf'):
+    file_path = './Data/validation_data/sub_' + dataset_num + '/' + field_type + '/snrs.txt'
+    lines = []
+    try:
+        with open(file_path, 'r') as file:
+            for line in file:
+                lines.append(ast.literal_eval(((line.strip()).split(' ', 1)[1])))
+                
+    except FileNotFoundError:
+        print(f"Error: The file '{file_path}' was not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    roi_voxels = lines[:4]
+    roi_snrs = lines[4:]
+    return roi_voxels, roi_snrs
+'''
 
     

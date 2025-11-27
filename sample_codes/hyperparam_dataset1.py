@@ -26,7 +26,7 @@ from Models.model_trainer import ModelTrainerModule
 
 
 
-from Models.models import Siren, Finer
+from projects.hulfsynth.hulfsynth.Models.old.models import Siren, Finer
 
 from Utils.utils import get_full_img, norm, get_device, dice_stack_helper, get_model, ClearCache
 from Data.load_data_3d import load_data, get_gt_seg

@@ -32,15 +32,15 @@ from Models.model_trainer import ModelTrainerModule, PosEncINRLightningModule
 
 
 
-from Models.models import Siren, Finer
-from Utils.utils import get_full_img, norm, get_device, dice_stack_helper, get_model, ClearCache
+
+from Utils.utils import get_full_img, norm, get_device, dice_stack_helper, ClearCache
 from Data.load_ixi import get_hf_observed_segmentations as get_hf_observed_segmentations_ixi, load_sensitivity_data
 from Data.load_ixi import load_data as load_ixi_data
 from Utils.defaults import default_config
 from Utils.plotting_utils2 import plot_seg_results_paper, plot_final_results_paper, plot_hf_results_paper
 from Utils.plotting_utils import loss_plot, plot_image_metrics, plot_4_images
 from LFSynth.ContrastModulation import ContrastModulation
-from LFSynth.HF_ContrastEstimation import load_val_data, get_hf_observed_segmentations as get_hf_observed_segmentations_val
+from LFSynth.ContrastEstimation_val import load_val_data, get_hf_observed_segmentations as get_hf_observed_segmentations_val 
 from Data.patchwise3D import RandomPointsDataset
 
 
@@ -64,6 +64,8 @@ def get_data(dataset_num, sens_id):
             hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_ixi_data(config)
         (wm_obs_seg, gm_obs_seg, csf_obs_seg, bg_obs_seg) = get_hf_observed_segmentations_ixi(config["dataset_num"], config)
         config["slice"] = 175
+        config["slice"] = 175 if str(dataset_num) == '102' else (155 if str(dataset_num) == '128' else 160) #slice_num and dataset_num[11: 0011, 24: 0015, 19: others]
+
     else:
         print("Loading val data: ", dataset_num)
         hf_ground_truth, lf_gt, lf_gt_seg_dice, M = load_val_data(target_type = 'ulf' , config = config)
@@ -109,7 +111,7 @@ def delete_folder_and_contents(folder_path):
 
 if __name__ == '__main__':
 
-    pl.seed_everything(seed=9600, workers=True)
+    
     config = copy.deepcopy(default_config)
     
     parser = argparse.ArgumentParser()
@@ -125,6 +127,7 @@ if __name__ == '__main__':
     parser.add_argument("-ffe", "--ffe", default=config["ffe"], help="use positional encoding") 
     parser.add_argument("-fff", "--fff", default=config["FF_FREQS"], help="Fourier Frequency")
     parser.add_argument("-ffs", "--ffs", default=config["FF_SCALE"], help="Fourier Scale")
+    parser.add_argument("-seed", "--seed", default=9600)
 
 
 
@@ -145,8 +148,8 @@ if __name__ == '__main__':
     config["ffe"] = bool(args.ffe)
     config["FF_FREQS"] = int(args.fff)
     config["FF_SCALE"] = int(args.ffs)
-
-
+    config["seed"] = int(args.seed)
+    pl.seed_everything(seed=config["seed"], workers=True)
 
     
 
@@ -212,3 +215,5 @@ if __name__ == '__main__':
     
     
     pprint.pprint(config)
+    
+    

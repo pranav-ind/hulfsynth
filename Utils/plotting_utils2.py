@@ -5,6 +5,11 @@ import matplotlib
 from matplotlib import pyplot as plt
 import torch
 from Utils.utils import norm, get_full_img
+import matplotlib.gridspec as gridspec
+from matplotlib.lines import Line2D
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+
 
 
 def plot_seg_results_paper(config, model_output_seg, hf_gt_seg_dice, lf_gt_seg_dice, prior_seg_dice):
@@ -174,8 +179,6 @@ def plot_sensitivity_results(images_dict, col_titles, bottom_titles, subplot_lab
         )
 
     [axs_inv.invert_yaxis() for axs_inv in axs.flatten()]
-    # plt.tight_layout()
-    # plt.subplots_adjust(left=0.05, top=0.99)
 
     plt.subplots_adjust(
     left=0.05, right=0.9, top=0.99, #bottom=0.12,
@@ -189,9 +192,6 @@ def plot_sensitivity_results(images_dict, col_titles, bottom_titles, subplot_lab
 
 
 
-
-import matplotlib.gridspec as gridspec
-from matplotlib.lines import Line2D
 
 
 def annotate_scores(ax, psnr, ssim, fontsize=6):
@@ -297,10 +297,6 @@ def plot_final_results_compare_paper(config, model_output_seg_list, prior_seg_di
     ax13.annotate(f"PSNR: {score_bicubic[2]:.2f}", (0.625, 0.05), xycoords='axes fraction', rotation=0, va='center', fontsize=font_size-1, color='lime')
     ax13.annotate(f"SSIM: {score_bicubic[3]:.3f}", (0.625, 0.95), xycoords='axes fraction', rotation=0, va='center', fontsize=font_size-1, color='lime')
 
-    
-
-
-
 
     # Get positions of ax31 and ax32
     pos1 = ax31.get_position()
@@ -323,8 +319,6 @@ def plot_final_results_compare_paper(config, model_output_seg_list, prior_seg_di
 
 
 
-import matplotlib as mpl
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def plot_seg_results_compare_2_paper(config, model_output_seg_list, hf_gt_seg_list, lf_gt_seg_list, prior_seg_dice):

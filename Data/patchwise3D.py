@@ -5,7 +5,7 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from torch.nn import functional as F
 import numpy as np
-from Utils.utils import get_full_img, norm, get_device, dice_stack_helper, get_model, ClearCache
+from Utils.utils import get_full_img, norm, get_device, dice_stack_helper, ClearCache
 
 
 class RandomPointsDataset(Dataset):
