@@ -377,7 +377,6 @@ class PosEncINRLightningModule(ModelTrainerModule):
     def forward(self, coords):
         # Apply positional encoding, then apply network
         pos_enc_coords = self.pos_encoder(coords)
-        print(pos_enc_coords.shape)
         return self.network(pos_enc_coords)
 
 
