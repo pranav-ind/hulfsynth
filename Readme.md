@@ -22,8 +22,10 @@ Arxiv Preprint on https://arxiv.org/abs/2511.14897
 # Data
 Please download the data from:
 1. IXI : https://brain-development.org/ixi-dataset/
-   Subjects used: 102, 105, 127, 128, 130 (chosen randomly; used to generate synthetic data)
+
+   Subjects used: 102, 105, 127, 128, 130 (chosen randomly; used to generate synthetic data).
    Field Strength: 3T
 2. LMIC : https://zenodo.org/records/15374450
-   Subjects used: 0011, 0015, 0023, 0027, 0035 (chosen randomly; used for validation experiments)
+
+   Subjects used: 0011, 0015, 0023, 0027, 0035 (chosen randomly; used for validation experiments).
    Field Strengths: 3T, 64mT
