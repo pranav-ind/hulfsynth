@@ -1,6 +1,4 @@
 # Citation
-"HULFSynth : An INR based Super-Resolution and Ultra Low-Field MRI Synthesis via Contrast factor estimation", Pranav Indrakanti and Ivor Simpson (2025).
-Arxiv Preprint on https://arxiv.org/abs/2511.14897
 
 # Default hyperparameters :
 | Hyperparam |      Description      |    Default <br>value     |      Range       |                                           Notes                                            |
